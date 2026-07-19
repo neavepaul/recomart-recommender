@@ -169,6 +169,30 @@ python -m src.recomart --db data\recomart.db run --api-page-size 5000
 python -m src.recomart --db data\recomart.db validate
 ```
 
+## Progress and logging
+
+Commands log their current stage to stderr by default. Long row-oriented work
+shows a tqdm-style counter with processed rows, throughput, and elapsed time.
+Long SQLite statements and index builds show a liveness counter, so a quiet
+terminal does not look like a stalled process.
+
+Example output:
+
+```text
+21:21:27 | INFO | Bronze pipeline started
+Bronze events: 2,000,000 rows | 84,210 rows/s | 00:23
+Bronze product properties: 8,500,000 rows | 31,400 rows/s | 04:30
+Silver latest product properties: 91,000,000 SQLite steps | 00:42
+Gold item vectors: 300,000 items | 18,500 items/s | 00:16
+```
+
+The final JSON result is written to stdout, while progress is written to stderr.
+Log verbosity can be changed before the command name:
+
+```powershell
+python -m src.recomart --db data\recomart.db --log-level WARNING run
+```
+
 ## Validation
 
 Run:

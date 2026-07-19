@@ -3,27 +3,45 @@
 from __future__ import annotations
 
 import json
+import itertools
+import logging
+import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from src.ingestion.item_property_csv import read_item_properties
 
+logger = logging.getLogger(__name__)
 
-def property_rows(raw_dir: Path, offset: int, limit: int):
-    skipped = emitted = 0
+
+def property_rows(raw_dir: Path):
     for filename in ("item_properties_part1.csv", "item_properties_part2.csv"):
         for row in read_item_properties(raw_dir / filename):
-            if skipped < offset:
-                skipped += 1
-                continue
-            if emitted >= limit:
-                return
-            emitted += 1
             yield row
 
 
 def handler_for(raw_dir: Path):
+    # The ingestion client requests monotonically increasing offsets. Retaining
+    # this cursor means the 20M-row source is scanned once, rather than once per
+    # HTTP page. A non-sequential request safely resets and seeks the stream.
+    lock = threading.Lock()
+    stream = property_rows(raw_dir)
+    position = 0
+
+    def page(offset: int, limit: int):
+        nonlocal stream, position
+        with lock:
+            if offset != position:
+                logger.info("Product API cursor reset: requested offset %s", f"{offset:,}")
+                stream = property_rows(raw_dir)
+                position = 0
+                for _ in itertools.islice(stream, offset):
+                    position += 1
+            items = list(itertools.islice(stream, limit))
+            position += len(items)
+            return items
+
     class ProductApiHandler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802
             parsed = urllib.parse.urlparse(self.path)
@@ -40,7 +58,7 @@ def handler_for(raw_dir: Path):
             except ValueError:
                 self.send_error(400, "offset and limit must be integers")
                 return
-            items = list(property_rows(raw_dir, offset, limit))
+            items = page(offset, limit)
             self._json({
                 "items": items,
                 "offset": offset,

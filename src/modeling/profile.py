@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import sqlite3
+import logging
 from pathlib import Path
 from typing import Any
 
 from src.core import connect
+
+logger = logging.getLogger(__name__)
 
 
 def _distribution(db: sqlite3.Connection, entity: str) -> dict[str, float | int]:
@@ -42,6 +45,7 @@ def profile_gold(db_path: Path, top_n: int = 10) -> dict[str, Any]:
         raise ValueError("top_n must be positive")
     db = connect(db_path)
     try:
+        logger.info("Profiling Gold tables")
         required = {"gold_user_item_features", "gold_item_features"}
         existing = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         missing = required - existing
@@ -92,7 +96,7 @@ def profile_gold(db_path: Path, top_n: int = 10) -> dict[str, Any]:
                    ORDER BY score DESC LIMIT ?""", (top_n,)
             )
         ]
-        return {
+        result = {
             "size": {"users": users, "interacted_items": interacted_items,
                      "catalog_items": catalog_items, "user_item_pairs": pairs},
             "interaction_totals": {"views": totals[0], "add_to_carts": totals[1],
@@ -106,6 +110,8 @@ def profile_gold(db_path: Path, top_n: int = 10) -> dict[str, Any]:
             "most_common_items": popular_items,
             "most_common_categories": categories,
         }
+        logger.info("Gold profile complete: %s users, %s interacted items",
+                    f"{users:,}", f"{interacted_items:,}")
+        return result
     finally:
         db.close()
-

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
 
 from src import core
@@ -44,6 +45,10 @@ def run_all(args: argparse.Namespace) -> dict[str, int]:
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(description=__doc__)
     command.add_argument("--db", type=Path, default=DEFAULT_DB)
+    command.add_argument(
+        "--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"),
+        default="INFO",
+    )
     sub = command.add_subparsers(dest="command", required=True)
     replay = sub.add_parser("replay-events")
     replay.add_argument("--speed", type=float, default=0)
@@ -97,6 +102,14 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = parser().parse_args()
+    logging.basicConfig(
+        level=getattr(logging, args.log_level),
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    logging.getLogger(__name__).info(
+        "Command '%s' using database %s", args.command, args.db
+    )
     if args.command == "serve-api":
         server = make_server(args.host, args.port)
         print(f"Product API listening on http://{args.host}:{args.port}")

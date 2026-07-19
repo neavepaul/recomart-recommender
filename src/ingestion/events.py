@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import csv
+import logging
 import time
 from pathlib import Path
 
 from src.core import batched, connect, nullable_int, rebuilt_table
+from src.progress import Progress, sqlite_activity
+
+logger = logging.getLogger(__name__)
 
 
 def _rows(path: Path, limit: int | None = None):
@@ -27,11 +31,17 @@ def replay_events(db_path: Path, raw_dir: Path, speed: float = 0, limit: int | N
     """Replay events in source order into the Bronze event table."""
     db = connect(db_path)
     count = 0
+    started = time.monotonic()
+    logger.info(
+        "Bronze events: replaying clickstream%s at speed %s",
+        f" (limit {limit:,})" if limit is not None else "", speed,
+    )
     ddl = """CREATE TABLE bronze_events (
         timestamp INTEGER NOT NULL, visitorid INTEGER NOT NULL,
         event TEXT NOT NULL, itemid INTEGER NOT NULL, transactionid INTEGER
     )"""
     try:
+        progress = Progress("Bronze events", total=limit, unit="rows")
         with rebuilt_table(db, "bronze_events", ddl):
             previous: int | None = None
             for batch in batched(_rows(raw_dir / "events.csv", limit), 5_000):
@@ -42,11 +52,18 @@ def replay_events(db_path: Path, raw_dir: Path, speed: float = 0, limit: int | N
                     previous = batch[-1][0]
                 db.executemany("INSERT INTO bronze_events VALUES (?,?,?,?,?)", batch)
                 count += len(batch)
-            db.execute(
-                "CREATE INDEX ix_bronze_events_user_item "
-                "ON bronze_events(visitorid,itemid)"
-            )
+                progress.update(count)
+            logger.info("Bronze events: building user/item index")
+            with sqlite_activity(db, "Bronze events index"):
+                db.execute(
+                    "CREATE INDEX ix_bronze_events_user_item "
+                    "ON bronze_events(visitorid,itemid)"
+                )
+        progress.close(count)
+        logger.info(
+            "Bronze events complete: %s rows in %.1f seconds",
+            f"{count:,}", time.monotonic() - started,
+        )
         return count
     finally:
         db.close()
-

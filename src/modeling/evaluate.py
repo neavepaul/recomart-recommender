@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import math
 import sqlite3
+import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from src.core import connect
+
+logger = logging.getLogger(__name__)
 
 
 def _metrics(recommendations: dict[int, list[int]], targets: dict[int, set[int]],
@@ -39,6 +42,7 @@ def evaluate_models(db_path: Path, k: int = 10) -> dict[str, Any]:
     db = connect(db_path)
     try:
         _require_models(db)
+        logger.info("Evaluating popularity and collaborative models at K=%d", k)
         targets: dict[int, set[int]] = defaultdict(set)
         for visitor, item in db.execute("SELECT visitor_id,item_id FROM model_test_targets"):
             targets[visitor].add(item)
@@ -73,6 +77,7 @@ def evaluate_models(db_path: Path, k: int = 10) -> dict[str, Any]:
         baseline_metrics = _metrics(baseline, targets, k, len(available))
         cf_metrics = _metrics(collaborative, targets, k, len(available))
         target_name, cutoff = db.execute("SELECT target,cutoff_ms FROM model_split_metadata LIMIT 1").fetchone()
+        logger.info("Model evaluation complete for %s eligible users", f"{len(targets):,}")
         return {"target": target_name, "cutoff_ms": cutoff, "k": k,
                 "eligible_users": len(targets),
                 "warm_users": sum(bool(histories.get(user)) for user in targets),
@@ -125,4 +130,3 @@ def _needed_neighbors(db: sqlite3.Connection,
            ON e.item_id=s.source_item_id ORDER BY s.source_item_id,s.neighbor_rank"""):
         neighbors[source].append((target, similarity))
     return neighbors
-

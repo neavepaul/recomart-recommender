@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import threading
+import logging
 from pathlib import Path
 
 from src.ingestion.categories import ingest_categories
 from src.ingestion.events import replay_events
 from src.ingestion.products import ingest_products, make_server
+
+logger = logging.getLogger(__name__)
 
 
 def build_bronze(
@@ -18,6 +21,7 @@ def build_bronze(
     api_page_size: int = 5_000,
 ) -> dict[str, int]:
     """Run batch, clickstream, and REST ingestion into Bronze tables."""
+    logger.info("Bronze pipeline started")
     result = {
         "bronze_category_tree": ingest_categories(db_path, raw_dir),
         "bronze_events": replay_events(db_path, raw_dir, speed, limit),
@@ -34,5 +38,5 @@ def build_bronze(
         server.shutdown()
         server.server_close()
         thread.join()
+    logger.info("Bronze pipeline complete: %s", result)
     return result
-

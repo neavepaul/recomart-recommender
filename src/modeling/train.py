@@ -5,10 +5,14 @@ from __future__ import annotations
 import itertools
 import math
 import sqlite3
+import logging
 from pathlib import Path
 from typing import Any
 
 from src.core import connect
+from src.progress import Progress, sqlite_activity
+
+logger = logging.getLogger(__name__)
 
 
 def train_models(db_path: Path, max_history: int = 30,
@@ -23,9 +27,14 @@ def train_models(db_path: Path, max_history: int = 30,
     db = connect(db_path)
     try:
         _require_split(db)
-        _train_popularity(db)
+        logger.info("Training weighted popularity baseline")
+        with sqlite_activity(db, "Popularity model"):
+            _train_popularity(db)
+        logger.info("Training item collaborative-filtering co-occurrences")
         pair_events, contributing_users = _accumulate_item_pairs(db, max_history)
-        _calculate_similarities(db, min_cooccurrence, neighbors)
+        logger.info("Calculating item cosine similarities")
+        with sqlite_activity(db, "Collaborative similarities"):
+            _calculate_similarities(db, min_cooccurrence, neighbors)
         return {
             "popularity_items": db.execute("SELECT COUNT(*) FROM model_popularity").fetchone()[0],
             "collaborative_filtering": {
@@ -78,6 +87,7 @@ def _accumulate_item_pairs(db: sqlite3.Connection, max_history: int) -> tuple[in
     history: list[tuple[int, float]] = []
     batch: list[tuple[int, int, float]] = []
     pair_events = contributing_users = 0
+    progress = Progress("Collaborative pair contributions", unit="pairs")
 
     def add_history(items: list[tuple[int, float]]) -> None:
         nonlocal pair_events, contributing_users, batch
@@ -93,6 +103,7 @@ def _accumulate_item_pairs(db: sqlite3.Connection, max_history: int) -> tuple[in
                 db.executemany(upsert, batch)
                 db.commit()
                 batch = []
+                progress.update(pair_events)
 
     for visitor_id, item_id, score in db.execute(query):
         if current_user is not None and visitor_id != current_user:
@@ -105,6 +116,7 @@ def _accumulate_item_pairs(db: sqlite3.Connection, max_history: int) -> tuple[in
     if batch:
         db.executemany(upsert, batch)
     db.commit()
+    progress.close(pair_events)
     return pair_events, contributing_users
 
 

@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import sqlite3
+import time
+
+from src.progress import Progress, sqlite_activity
+
+logger = logging.getLogger(__name__)
 
 
 def build_gold(db: sqlite3.Connection, vector_size: int = 256) -> None:
-    _build_interaction_features(db)
+    started = time.monotonic()
+    logger.info("Gold interactions: aggregating user/item behavior")
+    with sqlite_activity(db, "Gold user-item aggregation"):
+        _build_interaction_features(db)
+    logger.info("Gold items: generating sparse vectors with %s dimensions", f"{vector_size:,}")
     _build_item_features(db, vector_size)
     db.commit()
+    logger.info("Gold pipeline finished in %.1f seconds", time.monotonic() - started)
 
 
 def _build_interaction_features(db: sqlite3.Connection) -> None:
@@ -39,6 +50,8 @@ def _build_item_features(db: sqlite3.Connection, vector_size: int) -> None:
       item_id INTEGER PRIMARY KEY, category_id INTEGER, parent_category_id INTEGER,
       available INTEGER, item_feature_vector TEXT NOT NULL)""")
     rows = []
+    item_count = 0
+    progress = Progress("Gold item vectors", unit="items")
     query = """SELECT p.item_id,p.category_id,c.parent_category_id,
                       p.available,p.encoded_properties
                FROM silver_products p LEFT JOIN silver_category_hierarchy c
@@ -56,9 +69,12 @@ def _build_item_features(db: sqlite3.Connection, vector_size: int) -> None:
             sign = 1.0 if digest[0] & 1 else -1.0
             vector[bucket] = vector.get(bucket, 0.0) + sign
         rows.append((item_id, category, parent, available, json.dumps(vector, separators=(",", ":"))))
+        item_count += 1
         if len(rows) >= 5_000:
             db.executemany("INSERT INTO gold_item_features VALUES (?,?,?,?,?)", rows)
             rows = []
+            progress.update(item_count)
     if rows:
         db.executemany("INSERT INTO gold_item_features VALUES (?,?,?,?,?)", rows)
-
+    progress.close(item_count)
+    logger.info("Gold items complete: %s vectors", f"{item_count:,}")
