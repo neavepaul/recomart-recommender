@@ -1,0 +1,123 @@
+"""RecoMart command-line interface and backwards-compatible public API."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from src import core
+from src.ingestion import categories, events, products
+from src.pipelines.bronze import build_bronze
+from src.pipelines.runner import transform
+from src.validation import validate
+
+RAW = core.RAW
+DEFAULT_DB = core.DEFAULT_DB
+connect = core.connect
+counts = core.table_counts
+
+
+def replay_events(db_path: Path, speed: float = 0, limit: int | None = None) -> int:
+    return events.replay_events(db_path, RAW, speed, limit)
+
+
+def ingest_categories(db_path: Path) -> int:
+    return categories.ingest_categories(db_path, RAW)
+
+
+def make_server(host: str, port: int):
+    return products.make_server(host, port, RAW)
+
+
+def ingest_products(db_path: Path, api_url: str, page_size: int = 5_000, limit: int | None = None) -> int:
+    return products.ingest_products(db_path, api_url, page_size, limit)
+
+
+def run_all(args: argparse.Namespace) -> dict[str, int]:
+    build_bronze(args.db, RAW, args.speed, args.limit, args.api_page_size)
+    return transform(args.db, args.vector_size)
+
+
+def parser() -> argparse.ArgumentParser:
+    command = argparse.ArgumentParser(description=__doc__)
+    command.add_argument("--db", type=Path, default=DEFAULT_DB)
+    sub = command.add_subparsers(dest="command", required=True)
+    replay = sub.add_parser("replay-events")
+    replay.add_argument("--speed", type=float, default=0)
+    replay.add_argument("--limit", type=int)
+    sub.add_parser("ingest-categories")
+    api = sub.add_parser("serve-api")
+    api.add_argument("--host", default="127.0.0.1")
+    api.add_argument("--port", type=int, default=8000)
+    item_properties = sub.add_parser("ingest-products")
+    item_properties.add_argument("--api-url", default="http://127.0.0.1:8000")
+    item_properties.add_argument("--api-page-size", type=int, default=5_000)
+    item_properties.add_argument("--limit", type=int)
+    bronze = sub.add_parser("build-bronze")
+    bronze.add_argument("--speed", type=float, default=0)
+    bronze.add_argument("--limit", type=int)
+    bronze.add_argument("--api-page-size", type=int, default=5_000)
+    silver = sub.add_parser("build-silver")
+    gold = sub.add_parser("build-gold")
+    gold.add_argument("--vector-size", type=int, default=256)
+    transformed = sub.add_parser("transform")
+    transformed.add_argument("--vector-size", type=int, default=256)
+    sub.add_parser("validate")
+    run = sub.add_parser("run")
+    run.add_argument("--speed", type=float, default=0)
+    run.add_argument("--limit", type=int)
+    run.add_argument("--api-page-size", type=int, default=5_000)
+    run.add_argument("--vector-size", type=int, default=256)
+    return command
+
+
+def main() -> None:
+    args = parser().parse_args()
+    if args.command == "serve-api":
+        server = make_server(args.host, args.port)
+        print(f"Product API listening on http://{args.host}:{args.port}")
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            server.server_close()
+        return
+    if args.command == "replay-events":
+        result = {"bronze_events": replay_events(args.db, args.speed, args.limit)}
+    elif args.command == "ingest-categories":
+        result = {"bronze_category_tree": ingest_categories(args.db)}
+    elif args.command == "ingest-products":
+        result = {"bronze_item_properties": ingest_products(args.db, args.api_url, args.api_page_size, args.limit)}
+    elif args.command == "build-bronze":
+        result = build_bronze(args.db, RAW, args.speed, args.limit, args.api_page_size)
+    elif args.command == "build-silver":
+        db = connect(args.db)
+        try:
+            from src.pipelines.silver import build_silver
+            build_silver(db)
+            result = counts(db)
+        finally:
+            db.close()
+    elif args.command == "build-gold":
+        db = connect(args.db)
+        try:
+            from src.pipelines.gold import build_gold
+            build_gold(db, args.vector_size)
+            result = counts(db)
+        finally:
+            db.close()
+    elif args.command == "transform":
+        result = transform(args.db, args.vector_size)
+    elif args.command == "validate":
+        result = validate(args.db)
+    else:
+        result = run_all(args)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    if args.command == "validate" and not result["ok"]:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
