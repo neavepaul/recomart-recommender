@@ -7,7 +7,9 @@ import json
 from pathlib import Path
 
 from src import core
+from src.evaluation import evaluate_popularity
 from src.ingestion import categories, events, products
+from src.modeling import evaluate_models, prepare_model_data, profile_gold, train_models
 from src.pipelines.bronze import build_bronze
 from src.pipelines.runner import transform
 from src.validation import validate
@@ -64,6 +66,27 @@ def parser() -> argparse.ArgumentParser:
     transformed = sub.add_parser("transform")
     transformed.add_argument("--vector-size", type=int, default=256)
     sub.add_parser("validate")
+    evaluation = sub.add_parser("evaluate")
+    evaluation.add_argument("--k", type=int, default=10)
+    evaluation.add_argument(
+        "--target", choices=("transaction", "high-intent"), default="transaction"
+    )
+    evaluation.add_argument("--test-days", type=int, default=14)
+    evaluation.add_argument("--cutoff-ms", type=int)
+    profile = sub.add_parser("profile-gold")
+    profile.add_argument("--top", type=int, default=10)
+    split = sub.add_parser("prepare-model-data")
+    split.add_argument(
+        "--target", choices=("transaction", "high-intent"), default="transaction"
+    )
+    split.add_argument("--test-days", type=int, default=14)
+    split.add_argument("--cutoff-ms", type=int)
+    training = sub.add_parser("train-models")
+    training.add_argument("--max-history", type=int, default=30)
+    training.add_argument("--min-cooccurrence", type=int, default=2)
+    training.add_argument("--neighbors", type=int, default=50)
+    model_evaluation = sub.add_parser("evaluate-models")
+    model_evaluation.add_argument("--k", type=int, default=10)
     run = sub.add_parser("run")
     run.add_argument("--speed", type=float, default=0)
     run.add_argument("--limit", type=int)
@@ -112,6 +135,22 @@ def main() -> None:
         result = transform(args.db, args.vector_size)
     elif args.command == "validate":
         result = validate(args.db)
+    elif args.command == "evaluate":
+        result = evaluate_popularity(
+            args.db, args.k, args.target, args.test_days, args.cutoff_ms
+        )
+    elif args.command == "profile-gold":
+        result = profile_gold(args.db, args.top)
+    elif args.command == "prepare-model-data":
+        result = prepare_model_data(
+            args.db, args.target, args.test_days, args.cutoff_ms
+        )
+    elif args.command == "train-models":
+        result = train_models(
+            args.db, args.max_history, args.min_cooccurrence, args.neighbors
+        )
+    elif args.command == "evaluate-models":
+        result = evaluate_models(args.db, args.k)
     else:
         result = run_all(args)
     print(json.dumps(result, indent=2, sort_keys=True))

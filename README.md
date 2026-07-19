@@ -187,6 +187,92 @@ Validation returns table row counts and confirms:
 
 A successful validation result includes `"ok": true`.
 
+## Offline recommendation evaluation
+
+### Complete model-development workflow
+
+After building Gold, run these commands in order:
+
+```powershell
+# 1. Inspect Gold interactions, activity, sparsity, availability, items and categories
+& $python -m src.recomart --db data\recomart.db profile-gold --top 10
+
+# 2. Persist a leakage-safe temporal split
+& $python -m src.recomart --db data\recomart.db prepare-model-data `
+    --target transaction --test-days 14
+
+# 3. Train the popularity baseline and item-based collaborative filtering
+& $python -m src.recomart --db data\recomart.db train-models `
+    --max-history 30 --min-cooccurrence 2 --neighbors 50
+
+# 4. Evaluate both models on exactly the same future targets
+& $python -m src.recomart --db data\recomart.db evaluate-models --k 10
+```
+
+`prepare-model-data` reads timestamped Silver events because the normal Gold
+interaction table summarizes the entire timeline. It writes a training table
+with the same aggregated user-item features as Gold, but only from events before
+the cutoff. It also writes novel, available future purchase targets. This avoids
+training on behavior that belongs in the test period.
+
+`train-models` persists two models:
+
+- `model_popularity` ranks available items by training-period interaction score.
+- `model_item_similarity` is a weighted item-to-item cosine collaborative model.
+  Items become similar when the same users interacted with both. User histories
+  are capped by `--max-history` to control pair growth, weak pairs are removed by
+  `--min-cooccurrence`, and the best `--neighbors` similarities per item are kept.
+
+The collaborative recommender scores candidates from each user's weighted
+training history. It excludes seen and unavailable items and uses popularity to
+fill empty recommendation slots for sparse or cold-start users. The evaluation
+report compares both models and reports collaborative-filtering lift over the
+popularity benchmark.
+
+The persisted modeling tables are:
+
+| Table | Purpose |
+|---|---|
+| `model_split_metadata` | Cutoff, target definition, and source date range |
+| `model_train_user_items` | Pre-cutoff user-item training features |
+| `model_test_targets` | Novel available post-cutoff target items |
+| `model_popularity` | Trained global popularity ranks |
+| `model_item_pair_stats` | Weighted co-occurrence sufficient statistics |
+| `model_item_similarity` | Top cosine-similar neighbors for each item |
+
+### Standalone popularity evaluation
+
+The project includes a time-based weighted-popularity baseline. Earlier Silver
+events train the ranking; later transactions or high-intent events become the
+implicit test targets. Recommendations are limited to available products and
+items already seen during training are excluded from both recommendations and
+novel-item targets.
+
+Evaluate future purchases over the final 14 days:
+
+```powershell
+& $python -m src.recomart --db data\recomart.db evaluate --k 10 --target transaction --test-days 14
+```
+
+Evaluate future add-to-cart or purchase events:
+
+```powershell
+& $python -m src.recomart --db data\recomart.db evaluate --k 10 --target high-intent --test-days 14
+```
+
+For a fixed reproducible boundary, pass a RetailRocket epoch-millisecond value
+with `--cutoff-ms`. The report includes:
+
+- `precision@K`: relevant future items divided by K recommendations.
+- `recall@K`: relevant future items retrieved divided by all relevant targets.
+- `ndcg@K`: ranking quality, rewarding relevant items near the top.
+- `hit_rate@K`: fraction of evaluated users receiving at least one correct item.
+- `catalog_coverage@K`: fraction of available products recommended to anyone.
+- Eligible user, target-item, and catalog counts.
+
+This popularity result is the benchmark that future collaborative-filtering and
+hybrid models should beat using exactly the same temporal split and targets.
+
 ## Idempotency and storage
 
 Every pipeline rebuilds its destination tables transactionally. Re-running
