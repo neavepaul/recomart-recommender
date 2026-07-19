@@ -56,7 +56,7 @@ src/
 Run with:
 
 ```powershell
-& $python -m src.recomart build-bronze --limit 10000 --api-page-size 1000
+python -m src.recomart build-bronze --limit 10000 --api-page-size 1000
 ```
 
 `build-bronze` is the ingestion pipeline. It reads each external source and
@@ -72,10 +72,10 @@ The mock product API is also available separately for a live demonstration:
 
 ```powershell
 # Terminal 1
-& $python -m src.recomart serve-api --port 8000
+python -m src.recomart serve-api --port 8000
 
 # Terminal 2
-& $python -m src.recomart ingest-products --api-url http://127.0.0.1:8000
+python -m src.recomart ingest-products --api-url http://127.0.0.1:8000
 ```
 
 Clickstream replay options:
@@ -90,7 +90,7 @@ Clickstream replay options:
 Run after Bronze with:
 
 ```powershell
-& $python -m src.recomart build-silver
+python -m src.recomart build-silver
 ```
 
 `build-silver` reads only the three Bronze tables and rebuilds these curated
@@ -110,7 +110,7 @@ similarity, even though the property names and values are anonymized.
 Run after Silver with:
 
 ```powershell
-& $python -m src.recomart build-gold --vector-size 256
+python -m src.recomart build-gold --vector-size 256
 ```
 
 `build-gold` reads only Silver tables and rebuilds model-ready tables:
@@ -145,10 +145,10 @@ $python = "C:\Users\neave\.cache\codex-runtimes\codex-primary-runtime\dependenci
 ### Small smoke test
 
 ```powershell
-& $python -m src.recomart --db data\test.db build-bronze --limit 10000 --api-page-size 1000
-& $python -m src.recomart --db data\test.db build-silver
-& $python -m src.recomart --db data\test.db build-gold --vector-size 256
-& $python -m src.recomart --db data\test.db validate
+python -m src.recomart --db data\test.db build-bronze --limit 10000 --api-page-size 1000
+python -m src.recomart --db data\test.db build-silver
+python -m src.recomart --db data\test.db build-gold --vector-size 256
+python -m src.recomart --db data\test.db validate
 ```
 
 ### One-command run
@@ -156,8 +156,8 @@ $python = "C:\Users\neave\.cache\codex-runtimes\codex-primary-runtime\dependenci
 This runs Bronze ingestion, Silver curation, and Gold feature generation:
 
 ```powershell
-& $python -m src.recomart --db data\test.db run --limit 10000 --api-page-size 1000
-& $python -m src.recomart --db data\test.db validate
+python -m src.recomart --db data\test.db run --limit 10000 --api-page-size 1000
+python -m src.recomart --db data\test.db validate
 ```
 
 ### Full dataset
@@ -165,8 +165,8 @@ This runs Bronze ingestion, Silver curation, and Gold feature generation:
 Omit `--limit` after the small test succeeds:
 
 ```powershell
-& $python -m src.recomart --db data\recomart.db run --api-page-size 5000
-& $python -m src.recomart --db data\recomart.db validate
+python -m src.recomart --db data\recomart.db run --api-page-size 5000
+python -m src.recomart --db data\recomart.db validate
 ```
 
 ## Validation
@@ -174,7 +174,7 @@ Omit `--limit` after the small test succeeds:
 Run:
 
 ```powershell
-& $python -m src.recomart --db data\recomart.db validate
+python -m src.recomart --db data\recomart.db validate
 ```
 
 Validation returns table row counts and confirms:
