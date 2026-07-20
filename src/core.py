@@ -21,6 +21,10 @@ def connect(path: Path) -> sqlite3.Connection:
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("PRAGMA synchronous=NORMAL")
     db.execute("PRAGMA temp_store=FILE")
+    # Keep a bounded working set in RAM and memory-map reads. These settings
+    # remain comfortably below an 8 GB machine while helping the 20M-row sort.
+    db.execute("PRAGMA cache_size=-262144")
+    db.execute("PRAGMA mmap_size=536870912")
     return db
 
 
@@ -62,4 +66,3 @@ def table_counts(db: sqlite3.Connection) -> dict[str, int]:
         )
     ]
     return {name: db.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0] for name in tables}
-

@@ -18,7 +18,7 @@ def build_bronze(
     raw_dir: Path,
     speed: float = 0,
     limit: int | None = None,
-    api_page_size: int = 5_000,
+    api_page_size: int = 50_000,
 ) -> dict[str, int]:
     """Run batch, clickstream, and REST ingestion into Bronze tables."""
     logger.info("Bronze pipeline started")
@@ -27,7 +27,11 @@ def build_bronze(
         "bronze_events": replay_events(db_path, raw_dir, speed, limit),
     }
     server = make_server("127.0.0.1", 0, raw_dir)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(
+        target=server.serve_forever,
+        name="recomart-product-api",
+        daemon=False,
+    )
     thread.start()
     try:
         url = f"http://127.0.0.1:{server.server_address[1]}"

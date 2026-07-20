@@ -33,7 +33,7 @@ def make_server(host: str, port: int):
     return products.make_server(host, port, RAW)
 
 
-def ingest_products(db_path: Path, api_url: str, page_size: int = 5_000, limit: int | None = None) -> int:
+def ingest_products(db_path: Path, api_url: str, page_size: int = 50_000, limit: int | None = None) -> int:
     return products.ingest_products(db_path, api_url, page_size, limit)
 
 
@@ -59,12 +59,12 @@ def parser() -> argparse.ArgumentParser:
     api.add_argument("--port", type=int, default=8000)
     item_properties = sub.add_parser("ingest-products")
     item_properties.add_argument("--api-url", default="http://127.0.0.1:8000")
-    item_properties.add_argument("--api-page-size", type=int, default=5_000)
+    item_properties.add_argument("--api-page-size", type=int, default=50_000)
     item_properties.add_argument("--limit", type=int)
     bronze = sub.add_parser("build-bronze")
     bronze.add_argument("--speed", type=float, default=0)
     bronze.add_argument("--limit", type=int)
-    bronze.add_argument("--api-page-size", type=int, default=5_000)
+    bronze.add_argument("--api-page-size", type=int, default=50_000)
     silver = sub.add_parser("build-silver")
     gold = sub.add_parser("build-gold")
     gold.add_argument("--vector-size", type=int, default=256)
@@ -95,7 +95,7 @@ def parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run")
     run.add_argument("--speed", type=float, default=0)
     run.add_argument("--limit", type=int)
-    run.add_argument("--api-page-size", type=int, default=5_000)
+    run.add_argument("--api-page-size", type=int, default=50_000)
     run.add_argument("--vector-size", type=int, default=256)
     return command
 

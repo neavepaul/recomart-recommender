@@ -165,7 +165,7 @@ python -m src.recomart --db data\test.db validate
 Omit `--limit` after the small test succeeds:
 
 ```powershell
-python -m src.recomart --db data\recomart.db run --api-page-size 5000
+python -m src.recomart --db data\recomart.db run --api-page-size 100000
 python -m src.recomart --db data\recomart.db validate
 ```
 

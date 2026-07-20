@@ -13,6 +13,7 @@ from pathlib import Path
 from src.ingestion.item_property_csv import read_item_properties
 
 logger = logging.getLogger(__name__)
+MAX_API_PAGE_SIZE = 100_000
 
 
 def property_rows(raw_dir: Path):
@@ -28,10 +29,16 @@ def handler_for(raw_dir: Path):
     lock = threading.Lock()
     stream = property_rows(raw_dir)
     position = 0
+    last_offset: int | None = None
+    last_limit: int | None = None
+    last_items: list[dict[str, str]] = []
 
     def page(offset: int, limit: int):
-        nonlocal stream, position
+        nonlocal stream, position, last_offset, last_limit, last_items
         with lock:
+            # A timed-out client may safely repeat its most recent request.
+            if offset == last_offset and limit == last_limit:
+                return last_items
             if offset != position:
                 logger.info("Product API cursor reset: requested offset %s", f"{offset:,}")
                 stream = property_rows(raw_dir)
@@ -40,6 +47,9 @@ def handler_for(raw_dir: Path):
                     position += 1
             items = list(itertools.islice(stream, limit))
             position += len(items)
+            last_offset = offset
+            last_limit = limit
+            last_items = items
             return items
 
     class ProductApiHandler(BaseHTTPRequestHandler):
@@ -54,17 +64,30 @@ def handler_for(raw_dir: Path):
             query = urllib.parse.parse_qs(parsed.query)
             try:
                 offset = max(0, int(query.get("offset", ["0"])[0]))
-                limit = min(10_000, max(1, int(query.get("limit", ["1000"])[0])))
+                limit = min(
+                    MAX_API_PAGE_SIZE,
+                    max(1, int(query.get("limit", ["1000"])[0])),
+                )
             except ValueError:
                 self.send_error(400, "offset and limit must be integers")
                 return
-            items = page(offset, limit)
-            self._json({
-                "items": items,
-                "offset": offset,
-                "next_offset": offset + len(items),
-                "has_more": len(items) == limit,
-            })
+            try:
+                items = page(offset, limit)
+                self._json({
+                    "items": items,
+                    "offset": offset,
+                    "next_offset": offset + len(items),
+                    "has_more": len(items) == limit,
+                    "page_size": limit,
+                })
+            except (BrokenPipeError, ConnectionResetError):
+                logger.warning("Product API client disconnected at offset %s", f"{offset:,}")
+            except Exception:
+                logger.exception("Product API failed at offset %s", f"{offset:,}")
+                try:
+                    self.send_error(500, "item-property source failure")
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
 
         def _json(self, payload: object):
             body = json.dumps(payload, separators=(",", ":")).encode()
@@ -80,5 +103,12 @@ def handler_for(raw_dir: Path):
     return ProductApiHandler
 
 
+class ProductApiServer(ThreadingHTTPServer):
+    # Ensure request handlers finish before interpreter shutdown. This prevents
+    # daemon threads from writing tracebacks while Python is finalizing stderr.
+    daemon_threads = False
+    block_on_close = True
+
+
 def make_server(host: str, port: int, raw_dir: Path) -> ThreadingHTTPServer:
-    return ThreadingHTTPServer((host, port), handler_for(raw_dir))
+    return ProductApiServer((host, port), handler_for(raw_dir))
