@@ -229,9 +229,36 @@ After building Gold, run these commands in order:
 & $python -m src.recomart --db data\recomart.db train-models `
     --max-history 30 --min-cooccurrence 2 --neighbors 50
 
-# 4. Evaluate both models on exactly the same future targets
+# 4. Build normalized product-content features from Gold metadata
+& $python -m src.recomart --db data\recomart.db build-content-model `
+    --vector-size 256
+
+# 5. Evaluate popularity, item-CF, content, and the item-CF/content hybrid
 & $python -m src.recomart --db data\recomart.db evaluate-models --k 10
 ```
+
+### Content-based and hybrid recommendation
+
+`build-content-model` reads `gold_item_features`, not the raw source files. It
+turns each Gold sparse vector into a normalized item vector and persists the
+matrix under `models/content/`. The vectors already encode anonymized product
+properties, category, and parent category. The recommender also adds explicit
+same-category and same-parent affinity so that the category tree influences
+ranking directly.
+
+For each warm user, content recommendation creates a weighted profile from the
+items in that user's pre-cutoff history. It ranks unseen, available products by
+80% vector cosine similarity, 15% category affinity, and 5% parent-category
+affinity. Interaction weights use `log1p(interaction_score)` so stronger actions
+matter without allowing one large score to dominate the profile.
+
+The hybrid combines the top item-CF and content candidate lists with reciprocal
+rank fusion: 60% item-CF and 40% content. This preserves the stronger behavioral
+signal while allowing metadata-similar candidates into the result. The report
+contains `content_similarity` and `item_cf_content_hybrid`, including warm/cold
+segments and lift over popularity. Users with no training history cannot form a
+collaborative or content profile, so those cold-start users still receive the
+popularity fallback.
 
 `prepare-model-data` reads timestamped Silver events because the normal Gold
 interaction table summarizes the entire timeline. It writes a training table

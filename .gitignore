@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 data/*.db
 data/*.db-*
+models/content/*.npz
+models/content/metadata.json
 .venv/
 venv/
 *.csv

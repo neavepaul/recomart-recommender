@@ -10,7 +10,10 @@ from pathlib import Path
 from src import core
 from src.evaluation import evaluate_popularity
 from src.ingestion import categories, events, products
-from src.modeling import evaluate_models, prepare_model_data, profile_gold, train_models
+from src.modeling import (
+    build_content_model, evaluate_models, prepare_model_data, profile_gold,
+    train_models,
+)
 from src.pipelines.bronze import build_bronze
 from src.pipelines.runner import transform
 from src.validation import validate
@@ -92,6 +95,10 @@ def parser() -> argparse.ArgumentParser:
     training.add_argument("--neighbors", type=int, default=50)
     model_evaluation = sub.add_parser("evaluate-models")
     model_evaluation.add_argument("--k", type=int, default=10)
+    model_evaluation.add_argument("--content-model-dir", type=Path, default=Path("models/content"))
+    content = sub.add_parser("build-content-model")
+    content.add_argument("--model-dir", type=Path, default=Path("models/content"))
+    content.add_argument("--vector-size", type=int, default=256)
     run = sub.add_parser("run")
     run.add_argument("--speed", type=float, default=0)
     run.add_argument("--limit", type=int)
@@ -163,7 +170,11 @@ def main() -> None:
             args.db, args.max_history, args.min_cooccurrence, args.neighbors
         )
     elif args.command == "evaluate-models":
-        result = evaluate_models(args.db, args.k)
+        result = evaluate_models(
+            args.db, args.k, args.content_model_dir
+        )
+    elif args.command == "build-content-model":
+        result = build_content_model(args.db, args.model_dir, args.vector_size)
     else:
         result = run_all(args)
     print(json.dumps(result, indent=2, sort_keys=True))
