@@ -45,7 +45,8 @@ def prepare_model_data(db_path: Path, target: str = "transaction",
         db.execute("BEGIN")
         for table in ("model_split_metadata", "model_train_user_items",
                       "model_test_targets", "model_popularity",
-                      "model_item_pair_stats", "model_item_similarity"):
+                      "model_item_pair_stats", "model_item_similarity",
+                      "model_hybrid_config"):
             db.execute(f"DROP TABLE IF EXISTS {table}")
         db.execute("""CREATE TABLE model_split_metadata (
             cutoff_ms INTEGER NOT NULL,target TEXT NOT NULL,

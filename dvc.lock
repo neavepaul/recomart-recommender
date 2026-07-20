@@ -1,0 +1,48 @@
+schema: '2.0'
+stages:
+  recomart_pipeline:
+    cmd: python -m src.orchestration.prefect_flow --mode full --db 
+      data/recomart.db --raw-dir data/raw --model-dir models/content --report 
+      reports/model_metrics.json --api-page-size 100000 --vector-size 256 
+      --target transaction --test-days 14 --validation-days 14 --k 10 
+      --max-history 30 --min-cooccurrence 2 --neighbors 50
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 19cdee87944c59fc15c51396fe37cd88.dir
+      size: 987498023
+      nfiles: 4
+    - path: requirements.txt
+      hash: md5
+      md5: 818ac41380b45f9860af3a2a2825080c
+      size: 69
+    - path: src
+      hash: md5
+      md5: 6e164b3c66a73073122aa0e142cdb3a0.dir
+      size: 127724
+      nfiles: 28
+    params:
+      params.yaml:
+        curation.vector_size: 256
+        ingestion.api_page_size: 100000
+        model.k: 10
+        model.max_history: 30
+        model.min_cooccurrence: 2
+        model.neighbors: 50
+        split.target: transaction
+        split.test_days: 14
+        tuning.validation_days: 14
+    outs:
+    - path: data/recomart.db
+      hash: md5
+      md5: d2a40c1a893f4a0418c04fe630412206
+      size: 2445627392
+    - path: models/content
+      hash: md5
+      md5: 4e899bbb385f248456599bd75f53f8c6.dir
+      size: 19918704
+      nfiles: 4
+    - path: reports/model_metrics.json
+      hash: md5
+      md5: 77bb91101a381df911f2c7ec2b35ede2
+      size: 606

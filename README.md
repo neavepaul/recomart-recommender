@@ -233,7 +233,11 @@ After building Gold, run these commands in order:
 & $python -m src.recomart --db data\recomart.db build-content-model `
     --vector-size 256
 
-# 5. Evaluate popularity, item-CF, content, and the item-CF/content hybrid
+# 5. Tune content and fusion weights on a pre-test validation window
+& $python -m src.recomart --db data\recomart.db tune-hybrid `
+    --validation-days 14 --k 10
+
+# 6. Evaluate popularity, item-CF, content, and the tuned hybrid
 & $python -m src.recomart --db data\recomart.db evaluate-models --k 10
 ```
 
@@ -252,9 +256,18 @@ items in that user's pre-cutoff history. It ranks unseen, available products by
 affinity. Interaction weights use `log1p(interaction_score)` so stronger actions
 matter without allowing one large score to dominate the profile.
 
+`tune-hybrid` uses the final portion of the training period as validation data;
+it never reads the final test targets while selecting weights. It rebuilds a
+validation-only item-CF snapshot, tests five content-weight combinations and
+eleven item-CF/content fusion weights, and maximizes warm-user NDCG@K across 55
+configurations. The winning configuration is stored in `model_hybrid_config`
+and `models/content/tuning.json`. Re-running `evaluate-models` automatically
+uses it. Use `--validation-cutoff-ms` when an exact reproducible validation
+boundary is required.
+
 The hybrid combines the top item-CF and content candidate lists with reciprocal
-rank fusion: 60% item-CF and 40% content. This preserves the stronger behavioral
-signal while allowing metadata-similar candidates into the result. The report
+rank fusion. Before tuning, the defaults are 60% item-CF and 40% content. Tuning
+preserves the behavioral signal while allowing metadata-similar candidates into the result. The report
 contains `content_similarity` and `item_cf_content_hybrid`, including warm/cold
 segments and lift over popularity. Users with no training history cannot form a
 collaborative or content profile, so those cold-start users still receive the
@@ -290,6 +303,7 @@ The persisted modeling tables are:
 | `model_popularity` | Trained global popularity ranks |
 | `model_item_pair_stats` | Weighted co-occurrence sufficient statistics |
 | `model_item_similarity` | Top cosine-similar neighbors for each item |
+| `model_hybrid_config` | Validation-selected content and fusion weights |
 
 ### Standalone popularity evaluation
 
@@ -332,3 +346,96 @@ output; it does not append duplicate data. The command prints the resulting row
 counts so each run can be checked immediately.
 
 The generated SQLite files are ignored by Git (`data/*.db`).
+
+## Operational tooling
+
+### Prefect orchestration
+
+The existing modules are exposed as Prefect tasks and flows in
+`src/orchestration/prefect_flow.py`. The full DAG is:
+
+```text
+Bronze ingestion -> Silver cleaning -> Gold features -> validation
+    -> temporal split -> item-CF training -> content model
+    -> hybrid tuning -> final evaluation
+```
+
+Run only curation, only modeling, or the complete workflow:
+
+```powershell
+python -m src.orchestration.prefect_flow --mode curation `
+    --db data\recomart.db --api-page-size 100000
+
+python -m src.orchestration.prefect_flow --mode modeling `
+    --db data\recomart.db --validation-days 14 --k 10
+
+python -m src.orchestration.prefect_flow --mode full `
+    --db data\recomart.db --api-page-size 100000
+```
+
+Direct execution starts a temporary local Prefect server. For persistent run
+history and the Prefect UI, start a server in one terminal and point the flow at
+it from another:
+
+```powershell
+prefect server start
+$env:PREFECT_API_URL = "http://127.0.0.1:4200/api"
+python -m src.orchestration.prefect_flow --mode full
+```
+
+### Dataset lineage metadata
+
+Prefect flows persist operational metadata inside the RecoMart database:
+
+| Table | Contents |
+|---|---|
+| `metadata_pipeline_runs` | Flow name, parameters, orchestrator, status, start/end timestamps and errors |
+| `metadata_dataset_lineage` | Source URI and SHA-256 version, source modification time, ingestion timestamp, row count, storage URI, transformation, upstream datasets and schema version |
+
+Inspect the latest record for every dataset:
+
+```powershell
+python -m src.recomart --db data\recomart.db show-lineage
+```
+
+### DVC data and pipeline versioning
+
+`data/raw.dvc` versions the four RetailRocket source files in the DVC
+content-addressed cache. `dvc.yaml` versions the transformed SQLite database,
+content-model artifacts and final metric report as outputs of the complete
+Prefect pipeline. Configuration is held in `params.yaml`, and `dvc.lock`
+captures the exact dependency and output versions.
+
+```powershell
+dvc status
+dvc repro
+dvc metrics show
+```
+
+The local DVC cache is sufficient for local version checkout. Before sharing
+data between machines, configure a remote and push the cache:
+
+```powershell
+dvc remote add -d storage <remote-url>
+dvc push
+```
+
+Git tracks `data/raw.dvc`, `dvc.yaml`, `dvc.lock`, `params.yaml`, `.dvc/config`
+and `.dvcignore`; it does not track the large data files themselves.
+
+### MLflow model tracking
+
+The Prefect modeling flow creates separate MLflow runs for item-CF training,
+content-model construction, hybrid tuning and final evaluation. Each run stores
+parameters, nested metrics, identifying tags and JSON metadata artifacts.
+Tracking metadata is stored in `mlflow.db`; run artifacts are stored locally
+under MLflow's artifact directory.
+
+Open the local MLflow UI:
+
+```powershell
+mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+```
+
+Then visit `http://127.0.0.1:5000` and open the `recomart-recommender`
+experiment. Generated MLflow databases and artifacts are ignored by Git.

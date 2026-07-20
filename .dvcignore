@@ -1,0 +1,7 @@
+# Development and generated files that never participate in data hashes.
+.git/
+.venv/
+__pycache__/
+mlruns/
+mlartifacts/
+

@@ -5,6 +5,13 @@ data/*.db
 data/*.db-*
 models/content/*.npz
 models/content/metadata.json
+models/content/tuning.json
+mlflow.db
+mlflow.db-*
+mlruns/
+mlartifacts/
+reports/model_metrics.json
+.prefect/
 .venv/
 venv/
 *.csv

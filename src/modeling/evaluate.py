@@ -118,11 +118,20 @@ def evaluate_models(db_path: Path, k: int = 10,
         }
         content_lift = hybrid_lift = None
         if "model_content_metadata" in existing_tables:
-            logger.info("Evaluating content and item-CF/content hybrid models")
+            config = _hybrid_config(db)
+            logger.info(
+                "Evaluating content and hybrid models with weights "
+                "vector=%.2f category=%.2f parent=%.2f item-CF=%.2f content=%.2f",
+                config["vector_weight"], config["category_weight"],
+                config["parent_weight"], config["item_cf_weight"],
+                config["content_weight"],
+            )
             from src.modeling.content import recommend_content
             content_recommendations, content_raw, content_details = recommend_content(
                 targets, histories, popularity, available, k,
                 content_model_dir, candidate_pool,
+                config["vector_weight"], config["category_weight"],
+                config["parent_weight"],
             )
             content_metrics = _segmented_metrics(
                 content_recommendations, targets, histories, k, len(available)
@@ -133,9 +142,9 @@ def evaluate_models(db_path: Path, k: int = 10,
             for visitor in targets:
                 scores: dict[int, float] = defaultdict(float)
                 for rank, item in enumerate(collaborative_raw.get(visitor, []), 1):
-                    scores[item] += 0.60 / (20 + rank)
+                    scores[item] += config["item_cf_weight"] / (config["rrf_constant"] + rank)
                 for rank, item in enumerate(content_raw.get(visitor, []), 1):
-                    scores[item] += 0.40 / (20 + rank)
+                    scores[item] += config["content_weight"] / (config["rrf_constant"] + rank)
                 history = histories.get(visitor, {})
                 ranked = [
                     item for item, _ in sorted(
@@ -157,8 +166,12 @@ def evaluate_models(db_path: Path, k: int = 10,
             )
             models["item_cf_content_hybrid"] = {
                 **hybrid_metrics,
-                "item_cf_weight": 0.60,
-                "content_weight": 0.40,
+                "item_cf_weight": config["item_cf_weight"],
+                "content_weight": config["content_weight"],
+                "vector_weight": config["vector_weight"],
+                "category_weight": config["category_weight"],
+                "parent_category_weight": config["parent_weight"],
+                "rrf_constant": config["rrf_constant"],
                 "fusion": "reciprocal-rank",
                 "users_requiring_popularity_fallback": hybrid_fallback,
             }
@@ -202,6 +215,24 @@ def _require_models(db: sqlite3.Connection) -> None:
     missing = required - existing
     if missing:
         raise RuntimeError("Missing trained model tables: " + ", ".join(sorted(missing)))
+
+
+def _hybrid_config(db: sqlite3.Connection) -> dict[str, float]:
+    defaults = {
+        "vector_weight": 0.80, "category_weight": 0.15,
+        "parent_weight": 0.05, "item_cf_weight": 0.60,
+        "content_weight": 0.40, "rrf_constant": 20.0,
+    }
+    exists = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='model_hybrid_config'"
+    ).fetchone()
+    if not exists:
+        return defaults
+    row = db.execute(
+        """SELECT vector_weight,category_weight,parent_weight,item_cf_weight,
+                  content_weight,rrf_constant FROM model_hybrid_config LIMIT 1"""
+    ).fetchone()
+    return defaults if row is None else dict(zip(defaults, map(float, row)))
 
 
 def _histories(db: sqlite3.Connection, visitors: set[int]) -> dict[int, dict[int, float]]:

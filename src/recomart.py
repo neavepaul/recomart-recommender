@@ -10,9 +10,10 @@ from pathlib import Path
 from src import core
 from src.evaluation import evaluate_popularity
 from src.ingestion import categories, events, products
+from src.metadata import latest_lineage
 from src.modeling import (
     build_content_model, evaluate_models, prepare_model_data, profile_gold,
-    train_models,
+    train_models, tune_hybrid,
 )
 from src.pipelines.bronze import build_bronze
 from src.pipelines.runner import transform
@@ -74,6 +75,7 @@ def parser() -> argparse.ArgumentParser:
     transformed = sub.add_parser("transform")
     transformed.add_argument("--vector-size", type=int, default=256)
     sub.add_parser("validate")
+    sub.add_parser("show-lineage")
     evaluation = sub.add_parser("evaluate")
     evaluation.add_argument("--k", type=int, default=10)
     evaluation.add_argument(
@@ -99,6 +101,14 @@ def parser() -> argparse.ArgumentParser:
     content = sub.add_parser("build-content-model")
     content.add_argument("--model-dir", type=Path, default=Path("models/content"))
     content.add_argument("--vector-size", type=int, default=256)
+    tuning = sub.add_parser("tune-hybrid")
+    tuning.add_argument("--content-model-dir", type=Path, default=Path("models/content"))
+    tuning.add_argument("--validation-days", type=int, default=14)
+    tuning.add_argument("--validation-cutoff-ms", type=int)
+    tuning.add_argument("--k", type=int, default=10)
+    tuning.add_argument("--max-history", type=int, default=30)
+    tuning.add_argument("--min-cooccurrence", type=int, default=2)
+    tuning.add_argument("--neighbors", type=int, default=50)
     run = sub.add_parser("run")
     run.add_argument("--speed", type=float, default=0)
     run.add_argument("--limit", type=int)
@@ -155,6 +165,8 @@ def main() -> None:
         result = transform(args.db, args.vector_size)
     elif args.command == "validate":
         result = validate(args.db)
+    elif args.command == "show-lineage":
+        result = latest_lineage(args.db)
     elif args.command == "evaluate":
         result = evaluate_popularity(
             args.db, args.k, args.target, args.test_days, args.cutoff_ms
@@ -175,6 +187,12 @@ def main() -> None:
         )
     elif args.command == "build-content-model":
         result = build_content_model(args.db, args.model_dir, args.vector_size)
+    elif args.command == "tune-hybrid":
+        result = tune_hybrid(
+            args.db, args.content_model_dir, args.validation_days,
+            args.validation_cutoff_ms, args.k, args.max_history,
+            args.min_cooccurrence, args.neighbors,
+        )
     else:
         result = run_all(args)
     print(json.dumps(result, indent=2, sort_keys=True))

@@ -1,0 +1,15 @@
+ingestion:
+  api_page_size: 100000
+curation:
+  vector_size: 256
+split:
+  target: transaction
+  test_days: 14
+tuning:
+  validation_days: 14
+model:
+  k: 10
+  max_history: 30
+  min_cooccurrence: 2
+  neighbors: 50
+

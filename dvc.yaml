@@ -1,0 +1,38 @@
+stages:
+  recomart_pipeline:
+    cmd: >-
+      python -m src.orchestration.prefect_flow
+      --mode full
+      --db data/recomart.db
+      --raw-dir data/raw
+      --model-dir models/content
+      --report reports/model_metrics.json
+      --api-page-size ${ingestion.api_page_size}
+      --vector-size ${curation.vector_size}
+      --target ${split.target}
+      --test-days ${split.test_days}
+      --validation-days ${tuning.validation_days}
+      --k ${model.k}
+      --max-history ${model.max_history}
+      --min-cooccurrence ${model.min_cooccurrence}
+      --neighbors ${model.neighbors}
+    deps:
+      - data/raw
+      - src
+      - requirements.txt
+    params:
+      - ingestion.api_page_size
+      - curation.vector_size
+      - split.target
+      - split.test_days
+      - tuning.validation_days
+      - model.k
+      - model.max_history
+      - model.min_cooccurrence
+      - model.neighbors
+    outs:
+      - data/recomart.db
+      - models/content
+    metrics:
+      - reports/model_metrics.json
+

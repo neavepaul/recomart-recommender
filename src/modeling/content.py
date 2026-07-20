@@ -130,8 +130,15 @@ def recommend_content(
     k: int,
     model_dir: Path = DEFAULT_CONTENT_DIR,
     candidate_pool: int = 100,
+    vector_weight: float = 0.80,
+    category_weight: float = 0.15,
+    parent_weight: float = 0.05,
 ) -> tuple[dict[int, list[int]], dict[int, list[int]], dict[str, int]]:
     """Recommend by weighted user content profile and category affinity."""
+    if min(vector_weight, category_weight, parent_weight) < 0:
+        raise ValueError("content weights cannot be negative")
+    if vector_weight + category_weight + parent_weight <= 0:
+        raise ValueError("at least one content weight must be positive")
     np, sparse = _dependencies()
     model_dir = model_dir.resolve()
     feature_path = model_dir / "features.npz"
@@ -172,7 +179,7 @@ def recommend_content(
             norm = float(np.linalg.norm(profile))
             if norm > 0:
                 profile /= norm
-                scores = np.asarray(candidate_features @ profile).ravel() * 0.80
+                scores = np.asarray(candidate_features @ profile).ravel() * vector_weight
                 category_affinity: dict[int, float] = {}
                 parent_affinity: dict[int, float] = {}
                 total_weight = float(weights.sum()) or 1.0
@@ -183,11 +190,11 @@ def recommend_content(
                         category_affinity[category] = category_affinity.get(category, 0.0) + float(weight) / total_weight
                     if parent >= 0:
                         parent_affinity[parent] = parent_affinity.get(parent, 0.0) + float(weight) / total_weight
-                scores += 0.15 * np.fromiter(
+                scores += category_weight * np.fromiter(
                     (category_affinity.get(int(value), 0.0) for value in candidate_categories),
                     dtype=np.float32, count=len(candidate_rows),
                 )
-                scores += 0.05 * np.fromiter(
+                scores += parent_weight * np.fromiter(
                     (parent_affinity.get(int(value), 0.0) for value in candidate_parents),
                     dtype=np.float32, count=len(candidate_rows),
                 )

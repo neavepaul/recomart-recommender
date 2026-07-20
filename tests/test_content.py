@@ -6,6 +6,7 @@ from pathlib import Path
 from src.core import connect
 from src.modeling.content import build_content_model
 from src.modeling.evaluate import evaluate_models
+from src.modeling.tune import tune_hybrid
 
 
 @unittest.skipUnless(
@@ -51,6 +52,15 @@ class ContentModelTests(unittest.TestCase):
                 );
                 INSERT INTO silver_products VALUES
                     (10,1,1,'[]'),(20,1,1,'[]'),(30,2,1,'[]');
+                CREATE TABLE silver_user_events (
+                    event_timestamp TEXT,visitor_id INTEGER,item_id INTEGER,
+                    event_type TEXT,transaction_id INTEGER,event_timestamp_ms INTEGER
+                );
+                INSERT INTO silver_user_events VALUES
+                    ('1970-01-01',1,10,'view',NULL,1000),
+                    ('1970-01-01',2,10,'view',NULL,1100),
+                    ('1970-01-01',2,20,'transaction',1,1200),
+                    ('1970-01-01',1,20,'transaction',2,4000);
                 CREATE TABLE model_popularity(item_id INTEGER,score REAL,rank INTEGER);
                 INSERT INTO model_popularity VALUES (30,10,1),(20,5,2),(10,1,3);
                 CREATE TABLE model_item_similarity (
@@ -65,6 +75,20 @@ class ContentModelTests(unittest.TestCase):
             built = build_content_model(db_path, model_dir=model_dir, vector_size=4)
             self.assertEqual(built["items"], 3)
             self.assertTrue((model_dir / "features.npz").exists())
+
+            tuned = tune_hybrid(
+                db_path, content_model_dir=model_dir,
+                validation_cutoff_ms=3000, k=1, max_history=10,
+                min_cooccurrence=1, neighbors=5,
+            )
+            self.assertEqual(tuned["warm_validation_users"], 1)
+            self.assertEqual(tuned["configurations_tested"], 55)
+            db = connect(db_path)
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM model_hybrid_config").fetchone()[0],
+                1,
+            )
+            db.close()
 
             report = evaluate_models(
                 db_path, k=1, content_model_dir=model_dir
