@@ -10,6 +10,7 @@ from uuid import uuid4
 from prefect import flow, task
 
 from src.core import DEFAULT_DB, RAW, connect, table_counts
+from src.feature_store import register_features
 from src.metadata import finish_pipeline_run, record_dataset, start_pipeline_run
 from src.model_tracking import log_existing_artifact, log_result, model_run
 from src.modeling import (
@@ -17,6 +18,7 @@ from src.modeling import (
     train_models, tune_hybrid,
 )
 from src.pipelines.bronze import build_bronze
+from src.pipelines.features import build_features
 from src.pipelines.gold import build_gold
 from src.pipelines.silver import build_silver
 from src.validation import validate
@@ -100,6 +102,47 @@ def validation_task(db_path: Path) -> dict:
     if not result["ok"]:
         raise RuntimeError(f"Data validation failed: {result}")
     return result
+
+
+@task(name="build-features")
+def features_task(
+    db_path: Path, run_id: str, neighbors: int,
+    min_cooccurrence: int, max_history: int,
+) -> dict[str, int]:
+    db = connect(db_path)
+    try:
+        build_features(db, neighbors, min_cooccurrence, max_history)
+        result = table_counts(db)
+    finally:
+        db.close()
+    record_dataset(
+        db_path, run_id, "feature_user_activity", "feature_store",
+        "Per-user activity frequency, totals, and average interaction score.",
+        ["gold_user_item_features"],
+    )
+    record_dataset(
+        db_path, run_id, "feature_item_popularity", "feature_store",
+        "Per-item popularity, average interaction score, conversion, and rank.",
+        ["gold_user_item_features", "gold_item_features"],
+    )
+    record_dataset(
+        db_path, run_id, "feature_item_cooccurrence", "feature_store",
+        "Weighted item cosine co-occurrence neighbours from Gold interactions.",
+        ["gold_user_item_features"],
+    )
+    return result
+
+
+@task(name="register-features")
+def registry_task(db_path: Path, run_id: str, retention: int) -> dict:
+    manifest = register_features(db_path, run_id=run_id, retention=retention)
+    for view in manifest["feature_views"]:
+        record_dataset(
+            db_path, run_id, view["source_table"] + "_versions", "feature_store",
+            "Append-only versioned snapshot registered in the feature store.",
+            [view["source_table"]],
+        )
+    return manifest
 
 
 @task(name="prepare-temporal-model-data")
@@ -233,12 +276,15 @@ def evaluation_task(
 def curation_flow(
     db_path: Path = DEFAULT_DB, raw_dir: Path = RAW,
     api_page_size: int = 100_000, vector_size: int = 256,
-    speed: float = 0, limit: int | None = None,
+    neighbors: int = 50, min_cooccurrence: int = 2, max_history: int = 30,
+    feature_retention: int = 5, speed: float = 0, limit: int | None = None,
 ) -> dict:
     run_id = str(uuid4())
     parameters = {
         "db_path": str(db_path), "raw_dir": str(raw_dir),
         "api_page_size": api_page_size, "vector_size": vector_size,
+        "neighbors": neighbors, "min_cooccurrence": min_cooccurrence,
+        "max_history": max_history, "feature_retention": feature_retention,
         "speed": speed, "limit": limit,
     }
     start_pipeline_run(db_path, run_id, "recomart-curation", parameters)
@@ -246,10 +292,15 @@ def curation_flow(
         bronze = bronze_task(db_path, raw_dir, run_id, speed, limit, api_page_size)
         silver = silver_task(db_path, run_id)
         gold = gold_task(db_path, run_id, vector_size)
+        features = features_task(
+            db_path, run_id, neighbors, min_cooccurrence, max_history
+        )
+        registry = registry_task(db_path, run_id, feature_retention)
         checks = validation_task(db_path)
         finish_pipeline_run(db_path, run_id, "COMPLETED")
         return {"run_id": run_id, "bronze": bronze, "silver": silver,
-                "gold": gold, "validation": checks}
+                "gold": gold, "features": features, "registry": registry,
+                "validation": checks}
     except Exception as error:
         finish_pipeline_run(db_path, run_id, "FAILED", str(error))
         raise
@@ -286,14 +337,16 @@ def modeling_flow(
 @flow(name="recomart-full-pipeline", log_prints=True)
 def recomart_flow(**parameters) -> dict:
     curation_keys = {
-        "db_path", "raw_dir", "api_page_size", "vector_size", "speed", "limit"
+        "db_path", "raw_dir", "api_page_size", "vector_size",
+        "neighbors", "min_cooccurrence", "max_history", "feature_retention",
+        "speed", "limit"
     }
     curated = curation_flow(**{
         key: value for key, value in parameters.items() if key in curation_keys
     })
     modeled = modeling_flow(**{
         key: value for key, value in parameters.items()
-        if key not in {"raw_dir", "api_page_size", "speed", "limit"}
+        if key not in {"raw_dir", "api_page_size", "feature_retention", "speed", "limit"}
     })
     return {"curation": curated, "modeling": modeled}
 
@@ -314,6 +367,7 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument("--max-history", type=int, default=30)
     command.add_argument("--min-cooccurrence", type=int, default=2)
     command.add_argument("--neighbors", type=int, default=50)
+    command.add_argument("--feature-retention", type=int, default=5)
     command.add_argument("--speed", type=float, default=0)
     command.add_argument("--limit", type=int)
     return command
@@ -325,6 +379,8 @@ def main() -> None:
     if args.mode == "curation":
         result = curation_flow(
             **common, raw_dir=args.raw_dir, api_page_size=args.api_page_size,
+            neighbors=args.neighbors, min_cooccurrence=args.min_cooccurrence,
+            max_history=args.max_history, feature_retention=args.feature_retention,
             speed=args.speed, limit=args.limit,
         )
     elif args.mode == "modeling":
@@ -343,7 +399,8 @@ def main() -> None:
             validation_days=args.validation_days, k=args.k,
             max_history=args.max_history,
             min_cooccurrence=args.min_cooccurrence,
-            neighbors=args.neighbors, speed=args.speed, limit=args.limit,
+            neighbors=args.neighbors, feature_retention=args.feature_retention,
+            speed=args.speed, limit=args.limit,
         )
     print(json.dumps(result, indent=2, default=str))
 

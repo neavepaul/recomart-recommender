@@ -134,6 +134,86 @@ non-zero buckets are stored.
 Products with `available = 0` are intentionally retained in Gold. A serving or
 ranking step can use this field to avoid recommending unavailable products.
 
+### Feature engineering and transformation
+
+Run after Gold with:
+
+```powershell
+python -m src.recomart build-features --neighbors 50 --min-cooccurrence 2
+```
+
+`build-features` reads the Gold tables and materialises reusable feature tables
+for recommendation algorithms. The full SQL schema is in
+[docs/feature_schema.sql](docs/feature_schema.sql).
+
+| Table | Grain | Feature logic |
+|---|---|---|
+| `feature_user_activity` | one row per user | Activity frequency (`total_events`, `distinct_items`), event-type counts, and average rating per user (`avg_interaction_score` = total interaction score / distinct items), plus `purchase_rate` and last-active timestamp. |
+| `feature_item_popularity` | one row per catalog item | Popularity (`distinct_users`, `total_interaction_score`, `popularity_rank`), average rating per item (`avg_interaction_score` = score / distinct users), and `conversion_rate` (purchases / views). Cold items are kept with zero counts. |
+| `feature_item_cooccurrence` | one row per item-item neighbour | Co-occurrence / similarity feature: weighted item cosine similarity over the full Gold interactions, keeping the top `--neighbors` neighbours per item filtered by `--min-cooccurrence`. |
+
+"Rating" is the weighted interaction score (view = 1, add-to-cart = 3,
+transaction = 5); the dataset has no explicit star ratings. The co-occurrence
+computation is shared with model training (`src/cooccurrence.py`) so the feature
+and modelling similarities stay consistent. These tables are also produced
+automatically by `transform` and the curation flow, and are recorded in the
+dataset lineage under the `feature_store` layer.
+
+### Feature store and versioned retrieval
+
+The feature tables above are the live "current" values. A lightweight custom
+feature store (`src/feature_store.py`) sits on top of them to document each
+feature group and to preserve historical versions for reproducible retrieval.
+It is intentionally dependency-free — no Feast — reusing the same SQLite store
+and the pipeline `run_id` convention.
+
+Register the current features as a new version:
+
+```powershell
+python -m src.recomart --db data\recomart.db register-features --retention 5
+```
+
+Registration does three things:
+
+- Documents each feature view in the `feature_registry` table (entity, entity
+  key, source table, feature columns, transformation, version, row count).
+- Snapshots the current rows of every feature table into an append-only
+  `<table>_versions` table, tagged with a `feature_version` and timestamp.
+- Writes a JSON manifest to `reports/feature_registry.json` describing the
+  registered views. `--retention` keeps the most recent N versions per view.
+
+The three registered feature views are:
+
+| Feature view | Entity | Entity key | Source table |
+|---|---|---|---|
+| `user_activity` | user | `visitor_id` | `feature_user_activity` |
+| `item_popularity` | item | `item_id` | `feature_item_popularity` |
+| `item_cooccurrence` | item | `source_item_id` | `feature_item_cooccurrence` |
+
+Inspect the latest registered version of every feature view:
+
+```powershell
+python -m src.recomart --db data\recomart.db show-registry
+```
+
+Retrieve features for one or more entities. Inference uses the latest version;
+training pins an explicit version for a reproducible, point-in-time read:
+
+```powershell
+# Inference: latest feature values for serving
+python -m src.recomart --db data\recomart.db get-features `
+    --view item_popularity --id 315543 --for inference
+
+# Training: a specific historical version by run/version id
+python -m src.recomart --db data\recomart.db get-features `
+    --view user_activity --id 12345 --for training --version <feature_version>
+```
+
+The curation flow registers a feature version automatically after building the
+feature tables, using the flow `run_id` as the `feature_version`. This links
+every retrievable feature snapshot back to its pipeline run in the dataset
+lineage, and `reports/feature_registry.json` is versioned by DVC.
+
 ## Running the complete curation flow
 
 Set the bundled Python runtime once per PowerShell session:

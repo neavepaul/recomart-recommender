@@ -6,13 +6,17 @@ from pathlib import Path
 import logging
 
 from src.core import connect, table_counts
+from src.pipelines.features import build_features
 from src.pipelines.gold import build_gold
 from src.pipelines.silver import build_silver
 
 logger = logging.getLogger(__name__)
 
 
-def transform(db_path: Path, vector_size: int = 256) -> dict[str, int]:
+def transform(
+    db_path: Path, vector_size: int = 256,
+    neighbors: int = 50, min_cooccurrence: int = 2, max_history: int = 30,
+) -> dict[str, int]:
     db = connect(db_path)
     required = {"bronze_events", "bronze_item_properties", "bronze_category_tree"}
     existing = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -27,6 +31,9 @@ def transform(db_path: Path, vector_size: int = 256) -> dict[str, int]:
         logger.info("Gold pipeline started (vector size %s)", f"{vector_size:,}")
         build_gold(db, vector_size)
         logger.info("Gold pipeline complete")
+        logger.info("Feature pipeline started")
+        build_features(db, neighbors, min_cooccurrence, max_history)
+        logger.info("Feature pipeline complete")
         return table_counts(db)
     except Exception:
         db.rollback()

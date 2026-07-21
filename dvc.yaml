@@ -9,6 +9,7 @@ stages:
       --report reports/model_metrics.json
       --api-page-size ${ingestion.api_page_size}
       --vector-size ${curation.vector_size}
+      --feature-retention ${curation.feature_retention}
       --target ${split.target}
       --test-days ${split.test_days}
       --validation-days ${tuning.validation_days}
@@ -23,6 +24,7 @@ stages:
     params:
       - ingestion.api_page_size
       - curation.vector_size
+      - curation.feature_retention
       - split.target
       - split.test_days
       - tuning.validation_days
@@ -33,6 +35,7 @@ stages:
     outs:
       - data/recomart.db
       - models/content
+      - reports/feature_registry.json
     metrics:
       - reports/model_metrics.json
 

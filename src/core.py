@@ -61,7 +61,8 @@ def table_counts(db: sqlite3.Connection) -> dict[str, int]:
     tables = [
         row[0] for row in db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' "
-            "AND (name LIKE 'bronze_%' OR name LIKE 'silver_%' OR name LIKE 'gold_%') "
+            "AND (name LIKE 'bronze_%' OR name LIKE 'silver_%' OR name LIKE 'gold_%' "
+            "OR name LIKE 'feature_%') "
             "ORDER BY name"
         )
     ]

@@ -1,5 +1,6 @@
 numpy==2.5.1
 scipy==1.18.0
+matplotlib==3.10.7
 prefect==3.7.8
 dvc==3.67.1
 mlflow==3.14.0

@@ -15,3 +15,5 @@ reports/model_metrics.json
 .venv/
 venv/
 *.csv
+reports/**/*.png
+reports/feature_registry.json

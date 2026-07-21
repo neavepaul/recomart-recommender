@@ -10,10 +10,14 @@ from pathlib import Path
 from src import core
 from src.evaluation import evaluate_popularity
 from src.ingestion import categories, events, products
+from src.feature_store import (
+    get_online_features, get_training_features, list_registry, register_features,
+    view_names,
+)
 from src.metadata import latest_lineage
 from src.modeling import (
-    build_content_model, evaluate_models, prepare_model_data, profile_gold,
-    train_models, tune_hybrid,
+    build_content_model, evaluate_models, generate_eda_plots,
+    prepare_model_data, profile_gold, train_models, tune_hybrid,
 )
 from src.pipelines.bronze import build_bronze
 from src.pipelines.runner import transform
@@ -72,10 +76,29 @@ def parser() -> argparse.ArgumentParser:
     silver = sub.add_parser("build-silver")
     gold = sub.add_parser("build-gold")
     gold.add_argument("--vector-size", type=int, default=256)
+    feature = sub.add_parser("build-features")
+    feature.add_argument("--neighbors", type=int, default=50)
+    feature.add_argument("--min-cooccurrence", type=int, default=2)
+    feature.add_argument("--max-history", type=int, default=30)
     transformed = sub.add_parser("transform")
     transformed.add_argument("--vector-size", type=int, default=256)
+    transformed.add_argument("--neighbors", type=int, default=50)
+    transformed.add_argument("--min-cooccurrence", type=int, default=2)
+    transformed.add_argument("--max-history", type=int, default=30)
     sub.add_parser("validate")
     sub.add_parser("show-lineage")
+    register = sub.add_parser("register-features")
+    register.add_argument("--version")
+    register.add_argument("--retention", type=int, default=5)
+    sub.add_parser("show-registry")
+    get_features = sub.add_parser("get-features")
+    get_features.add_argument("--view", required=True, choices=view_names())
+    get_features.add_argument("--id", type=int, nargs="+", dest="ids")
+    get_features.add_argument("--version", default="latest")
+    get_features.add_argument(
+        "--for", choices=("inference", "training"), default="inference",
+        dest="retrieval",
+    )
     evaluation = sub.add_parser("evaluate")
     evaluation.add_argument("--k", type=int, default=10)
     evaluation.add_argument(
@@ -85,6 +108,9 @@ def parser() -> argparse.ArgumentParser:
     evaluation.add_argument("--cutoff-ms", type=int)
     profile = sub.add_parser("profile-gold")
     profile.add_argument("--top", type=int, default=10)
+    profile_plots = sub.add_parser("profile-plots")
+    profile_plots.add_argument("--top", type=int, default=15)
+    profile_plots.add_argument("--out-dir", type=Path, default=Path("reports/eda"))
     split = sub.add_parser("prepare-model-data")
     split.add_argument(
         "--target", choices=("transaction", "high-intent"), default="transaction"
@@ -161,18 +187,42 @@ def main() -> None:
             result = counts(db)
         finally:
             db.close()
+    elif args.command == "build-features":
+        db = connect(args.db)
+        try:
+            from src.pipelines.features import build_features
+            build_features(db, args.neighbors, args.min_cooccurrence, args.max_history)
+            result = counts(db)
+        finally:
+            db.close()
     elif args.command == "transform":
-        result = transform(args.db, args.vector_size)
+        result = transform(
+            args.db, args.vector_size, args.neighbors,
+            args.min_cooccurrence, args.max_history,
+        )
     elif args.command == "validate":
         result = validate(args.db)
     elif args.command == "show-lineage":
         result = latest_lineage(args.db)
+    elif args.command == "register-features":
+        result = register_features(args.db, args.version, args.retention)
+    elif args.command == "show-registry":
+        result = list_registry(args.db)
+    elif args.command == "get-features":
+        if args.retrieval == "inference":
+            result = get_online_features(args.db, args.view, args.ids)
+        else:
+            result = get_training_features(
+                args.db, args.view, args.ids, args.version
+            )
     elif args.command == "evaluate":
         result = evaluate_popularity(
             args.db, args.k, args.target, args.test_days, args.cutoff_ms
         )
     elif args.command == "profile-gold":
         result = profile_gold(args.db, args.top)
+    elif args.command == "profile-plots":
+        result = generate_eda_plots(args.db, args.out_dir, args.top)
     elif args.command == "prepare-model-data":
         result = prepare_model_data(
             args.db, args.target, args.test_days, args.cutoff_ms
