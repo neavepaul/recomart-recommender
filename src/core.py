@@ -10,6 +10,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
+LANDING = ROOT / "data" / "landing"
 DEFAULT_DB = ROOT / "data" / "recomart.db"
 EVENT_TYPES = {"view", "addtocart", "transaction"}
 WEIGHTS = {"view": 1, "addtocart": 3, "transaction": 5}

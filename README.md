@@ -6,15 +6,18 @@ to turn raw interaction and product data into recommendation-ready features.
 
 All layers are stored in one SQLite database (`data/recomart.db` by default).
 They remain separate through the `bronze_`, `silver_`, and `gold_` table prefixes.
-Each pipeline reads its input from the prior layer's database tables; only Bronze
-reads from external sources.
+Each pipeline reads its input from the prior layer's database tables. Source
+CSVs are first copied into an immutable, partitioned landing snapshot; Bronze
+reads only that landing snapshot.
 
 ```text
-events.csv -----------+
-                       +--> Bronze tables --> Silver tables --> Gold tables
-Product REST API ------+
-                       |
-category_tree.csv -----+
+data/raw source CSVs --> partitioned landing snapshot
+                              |
+                              +--> clickstream replay --> Bronze events
+                              +--> mock REST API ------> Bronze properties
+                              +--> batch CSV ----------> Bronze categories
+                                      |
+                                      +--> Silver --> Gold --> feature store
 ```
 
 ## Data sources and ingestion patterns
@@ -35,6 +38,7 @@ unquoted commas in the final `value` column. Therefore an item property such as
 src/
 |-- core.py                    # configuration, database connection, shared helpers
 |-- ingestion/
+|   |-- landing.py             # immutable source/type/date/version snapshots
 |   |-- events.py              # clickstream replay source adapter
 |   |-- categories.py          # category CSV source adapter
 |   |-- item_property_csv.py   # resilient item-properties CSV parser
@@ -46,7 +50,33 @@ src/
 |   |-- gold.py                # Silver-to-Gold feature generation
 |   `-- runner.py              # complete Silver + Gold orchestration
 |-- validation.py              # data-quality checks
+|-- quality.py                 # Pandas/GX profiling and PDF quality report
+|-- modeling/inference.py      # hybrid recommendation serving interface
 `-- recomart.py                # command-line interface
+```
+
+## Source and landing storage
+
+`data/raw/` is the immutable source drop containing the four original
+RetailRocket CSVs. The landing step creates content-addressed partitions:
+
+```text
+data/landing/
+|-- source=retailrocket/
+|   |-- type=clickstream/ingestion_date=YYYY-MM-DD/source_version=<hash>/
+|   |-- type=product_metadata/ingestion_date=YYYY-MM-DD/source_version=<hash>/
+|   `-- type=category_reference/ingestion_date=YYYY-MM-DD/source_version=<hash>/
+`-- _manifests/ingestion_timestamp=<UTC timestamp>.json
+```
+
+Each manifest records source and landing paths, SHA-256 versions, byte sizes,
+data types and ingestion time. Unchanged source files reuse the same immutable
+content partition, so repeated runs do not create another 1 GB copy.
+
+Stage a snapshot explicitly for inspection:
+
+```powershell
+python -m src.recomart stage-landing --ingestion-date 2026-07-21
 ```
 
 ## Pipeline behaviour
@@ -59,8 +89,8 @@ Run with:
 python -m src.recomart build-bronze --limit 10000 --api-page-size 1000
 ```
 
-`build-bronze` is the ingestion pipeline. It reads each external source and
-rebuilds the following raw tables:
+`build-bronze` is the ingestion pipeline. It first stages or reuses the current
+landing snapshot, then reads each landed source and rebuilds these raw tables:
 
 | Table | Columns | What the pipeline does |
 |---|---|---|
@@ -317,6 +347,32 @@ Validation returns table row counts and confirms:
 
 A successful validation result includes `"ok": true`.
 
+### Pandas profiling, Great Expectations and PDF report
+
+Generate the assignment-ready data-quality artifacts with:
+
+```powershell
+python -m src.recomart --db data\recomart.db quality-report `
+    --sample-rows 100000 `
+    --json-report reports\data_quality_report.json `
+    --pdf-report output\pdf\recomart_data_quality_report.pdf
+```
+
+The report combines two complementary validation scopes:
+
+- Full-table SQL checks inspect every stored row for schema conformance,
+  missing keys and timestamps, duplicate events and user-item pairs, event and
+  availability domains, transaction-ID consistency, orphan items/categories,
+  missing properties, interaction-score correctness, feature-vector presence,
+  and Bronze-to-Silver rejection counts.
+- Pandas profiles deterministic samples with data types, missing values,
+  cardinality, numeric ranges and duplicate counts. Great Expectations runs
+  explicit not-null, uniqueness, set-membership and range expectations against
+  those DataFrames.
+
+Critical failures produce a non-zero CLI exit. Warnings remain visible in both
+JSON and PDF without blocking the pipeline.
+
 ## Offline recommendation evaluation
 
 ### Complete model-development workflow
@@ -443,6 +499,23 @@ with `--cutoff-ms`. The report includes:
 
 This popularity result is the benchmark that future collaborative-filtering and
 hybrid models should beat using exactly the same temporal split and targets.
+
+## Recommendation inference interface
+
+Serve ranked recommendations from the persisted item-CF model, content matrix,
+tuned hybrid weights and latest Gold user history:
+
+```powershell
+python -m src.recomart --db data\recomart.db recommend `
+    --visitor-id 1 --k 10 `
+    --content-model-dir models\content
+```
+
+The response excludes previously seen and unavailable items and includes rank,
+fusion score, category metadata and contributing sources (`item_cf`, `content`
+or `popularity`). Users with no history receive the trained available-item
+popularity fallback. `--max-history` bounds the latest history used for online
+scoring.
 
 ## Idempotency and storage
 

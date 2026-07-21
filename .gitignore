@@ -7,6 +7,7 @@ coverage.json
 htmlcov/
 data/*.db
 data/*.db-*
+data/landing/
 models/content/*.npz
 models/content/metadata.json
 models/content/tuning.json
@@ -19,6 +20,7 @@ reports/coverage.json
 .prefect/
 .venv/
 venv/
+tmp/
 *.csv
 reports/**/*.png
 reports/feature_registry.json

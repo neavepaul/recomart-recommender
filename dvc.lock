@@ -15,13 +15,13 @@ stages:
       nfiles: 4
     - path: requirements.txt
       hash: md5
-      md5: 2c0fefa78f62ca62e707cc9c4f2f98a2
-      size: 138
+      md5: 85926af65a83f44eaa9f8586069a439c
+      size: 196
     - path: src
       hash: md5
-      md5: 399c20f38ca9bae16dae3806218b433f.dir
-      size: 163099
-      nfiles: 32
+      md5: b6e91ccb37adf50f74cf305f47e011dc.dir
+      size: 196160
+      nfiles: 35
     params:
       params.yaml:
         curation.feature_retention: 5

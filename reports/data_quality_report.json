@@ -1,0 +1,555 @@
+{
+  "checks": [
+    {
+      "description": "Expected ordered columns: timestamp, visitorid, event, itemid, transactionid",
+      "name": "schema_bronze_events",
+      "observed": [
+        "timestamp",
+        "visitorid",
+        "event",
+        "itemid",
+        "transactionid"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: timestamp, itemid, property, value",
+      "name": "schema_bronze_item_properties",
+      "observed": [
+        "timestamp",
+        "itemid",
+        "property",
+        "value"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: categoryid, parentid",
+      "name": "schema_bronze_category_tree",
+      "observed": [
+        "categoryid",
+        "parentid"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: event_timestamp, visitor_id, item_id, event_type, transaction_id, event_timestamp_ms",
+      "name": "schema_silver_user_events",
+      "observed": [
+        "event_timestamp",
+        "visitor_id",
+        "item_id",
+        "event_type",
+        "transaction_id",
+        "event_timestamp_ms"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: item_id, category_id, available, encoded_properties",
+      "name": "schema_silver_products",
+      "observed": [
+        "item_id",
+        "category_id",
+        "available",
+        "encoded_properties"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: category_id, parent_category_id",
+      "name": "schema_silver_category_hierarchy",
+      "observed": [
+        "category_id",
+        "parent_category_id"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: visitor_id, item_id, view_count, cart_count, purchase_count, interaction_score, last_interaction_timestamp",
+      "name": "schema_gold_user_item_features",
+      "observed": [
+        "visitor_id",
+        "item_id",
+        "view_count",
+        "cart_count",
+        "purchase_count",
+        "interaction_score",
+        "last_interaction_timestamp"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Expected ordered columns: item_id, category_id, parent_category_id, available, item_feature_vector",
+      "name": "schema_gold_item_features",
+      "observed": [
+        "item_id",
+        "category_id",
+        "parent_category_id",
+        "available",
+        "item_feature_vector"
+      ],
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Bronze events require timestamp, visitor, item, and event values.",
+      "name": "missing_bronze_event_keys",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Exact duplicate Bronze events are reported as a warning.",
+      "name": "duplicate_bronze_events",
+      "severity": "warning",
+      "success": false,
+      "violations": 460
+    },
+    {
+      "description": "Silver event types must be view, addtocart, or transaction.",
+      "name": "invalid_silver_event_types",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Silver event identifiers and timestamps must be populated.",
+      "name": "missing_silver_event_keys",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Transactions require an ID; non-transactions must not have one.",
+      "name": "transaction_id_consistency",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Availability values must be 0, 1, or null.",
+      "name": "availability_domain",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Silver has one row per product.",
+      "name": "duplicate_silver_products",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Silver event items should exist in the product catalog.",
+      "name": "orphan_event_items",
+      "severity": "warning",
+      "success": false,
+      "violations": 255585
+    },
+    {
+      "description": "Every non-null parent category should exist in the hierarchy.",
+      "name": "orphan_parent_categories",
+      "severity": "warning",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Bronze product property keys and values must be populated.",
+      "name": "missing_property_values",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Gold has one row per visitor-item pair.",
+      "name": "duplicate_gold_user_items",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Gold score must equal views + 3*carts + 5*purchases.",
+      "name": "interaction_score_formula",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Every Gold item requires a non-empty content vector.",
+      "name": "missing_gold_vectors",
+      "severity": "critical",
+      "success": true,
+      "violations": 0
+    },
+    {
+      "description": "Rows removed by Silver validation (informational).",
+      "name": "bronze_to_silver_rejections",
+      "observed": {
+        "bronze_rows": 2756101,
+        "silver_rows": 2756101
+      },
+      "severity": "information",
+      "success": true,
+      "violations": 0
+    }
+  ],
+  "critical_failures": 0,
+  "database": "C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\data\\recomart.db",
+  "generated_at": "2026-07-21T17:29:17.815796+00:00",
+  "great_expectations": [
+    {
+      "column": "visitor_id",
+      "dataset": "silver_user_events",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_id",
+      "dataset": "silver_user_events",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "event_timestamp_ms",
+      "dataset": "silver_user_events",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "event_type",
+      "dataset": "silver_user_events",
+      "expectation": "ExpectColumnValuesToBeInSet",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_id",
+      "dataset": "silver_products",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_id",
+      "dataset": "silver_products",
+      "expectation": "ExpectColumnValuesToBeUnique",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "available",
+      "dataset": "silver_products",
+      "expectation": "ExpectColumnValuesToBeInSet",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "visitor_id",
+      "dataset": "gold_user_item_features",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_id",
+      "dataset": "gold_user_item_features",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "interaction_score",
+      "dataset": "gold_user_item_features",
+      "expectation": "ExpectColumnValuesToBeBetween",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_id",
+      "dataset": "gold_item_features",
+      "expectation": "ExpectColumnValuesToBeUnique",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    },
+    {
+      "column": "item_feature_vector",
+      "dataset": "gold_item_features",
+      "expectation": "ExpectColumnValuesToNotBeNull",
+      "success": true,
+      "unexpected_count": 0,
+      "unexpected_percent": 0.0
+    }
+  ],
+  "profiles": [
+    {
+      "columns": [
+        {
+          "distinct": 99046,
+          "dtype": "object",
+          "missing": 0,
+          "name": "event_timestamp"
+        },
+        {
+          "distinct": 52527,
+          "dtype": "int64",
+          "maximum": 52526.0,
+          "mean": 26138.15334,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "visitor_id"
+        },
+        {
+          "distinct": 44552,
+          "dtype": "int64",
+          "maximum": 466864.0,
+          "mean": 234762.14019,
+          "minimum": 6.0,
+          "missing": 0,
+          "name": "item_id"
+        },
+        {
+          "distinct": 3,
+          "dtype": "object",
+          "missing": 0,
+          "name": "event_type"
+        },
+        {
+          "distinct": 497,
+          "dtype": "float64",
+          "maximum": 17648.0,
+          "mean": 8995.826952526799,
+          "minimum": 44.0,
+          "missing": 99347,
+          "name": "transaction_id"
+        },
+        {
+          "distinct": 99907,
+          "dtype": "int64",
+          "maximum": 1442544937604.0,
+          "mean": 1436411413329.4153,
+          "minimum": 1430622200404.0,
+          "missing": 0,
+          "name": "event_timestamp_ms"
+        }
+      ],
+      "full_row_count": 2756101,
+      "sample_duplicate_rows": 17,
+      "sample_missing_values": 99347,
+      "sample_row_count": 100000,
+      "table": "silver_user_events"
+    },
+    {
+      "columns": [
+        {
+          "distinct": 100000,
+          "dtype": "int64",
+          "maximum": 111848.0,
+          "mean": 55957.96551,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "item_id"
+        },
+        {
+          "distinct": 1061,
+          "dtype": "int64",
+          "maximum": 1697.0,
+          "mean": 839.0697,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "category_id"
+        },
+        {
+          "distinct": 2,
+          "dtype": "int64",
+          "maximum": 1.0,
+          "mean": 0.12877,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "available"
+        },
+        {
+          "distinct": 100000,
+          "dtype": "object",
+          "missing": 0,
+          "name": "encoded_properties"
+        }
+      ],
+      "full_row_count": 417053,
+      "sample_duplicate_rows": 0,
+      "sample_missing_values": 0,
+      "sample_row_count": 100000,
+      "table": "silver_products"
+    },
+    {
+      "columns": [
+        {
+          "distinct": 66826,
+          "dtype": "int64",
+          "maximum": 66825.0,
+          "mean": 33411.93191,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "visitor_id"
+        },
+        {
+          "distinct": 52436,
+          "dtype": "int64",
+          "maximum": 466864.0,
+          "mean": 234308.66296,
+          "minimum": 6.0,
+          "missing": 0,
+          "name": "item_id"
+        },
+        {
+          "distinct": 47,
+          "dtype": "int64",
+          "maximum": 170.0,
+          "mean": 1.23916,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "view_count"
+        },
+        {
+          "distinct": 17,
+          "dtype": "int64",
+          "maximum": 29.0,
+          "mean": 0.03204,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "cart_count"
+        },
+        {
+          "distinct": 4,
+          "dtype": "int64",
+          "maximum": 3.0,
+          "mean": 0.0092,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "purchase_count"
+        },
+        {
+          "distinct": 54,
+          "dtype": "int64",
+          "maximum": 170.0,
+          "mean": 1.38128,
+          "minimum": 1.0,
+          "missing": 0,
+          "name": "interaction_score"
+        },
+        {
+          "distinct": 99225,
+          "dtype": "object",
+          "missing": 0,
+          "name": "last_interaction_timestamp"
+        }
+      ],
+      "full_row_count": 2145179,
+      "sample_duplicate_rows": 0,
+      "sample_missing_values": 0,
+      "sample_row_count": 100000,
+      "table": "gold_user_item_features"
+    },
+    {
+      "columns": [
+        {
+          "distinct": 100000,
+          "dtype": "int64",
+          "maximum": 111848.0,
+          "mean": 55957.96551,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "item_id"
+        },
+        {
+          "distinct": 1061,
+          "dtype": "int64",
+          "maximum": 1697.0,
+          "mean": 839.0697,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "category_id"
+        },
+        {
+          "distinct": 278,
+          "dtype": "float64",
+          "maximum": 1698.0,
+          "mean": 807.5184992496248,
+          "minimum": 8.0,
+          "missing": 50,
+          "name": "parent_category_id"
+        },
+        {
+          "distinct": 2,
+          "dtype": "int64",
+          "maximum": 1.0,
+          "mean": 0.12877,
+          "minimum": 0.0,
+          "missing": 0,
+          "name": "available"
+        },
+        {
+          "distinct": 100000,
+          "dtype": "object",
+          "missing": 0,
+          "name": "item_feature_vector"
+        }
+      ],
+      "full_row_count": 417053,
+      "sample_duplicate_rows": 0,
+      "sample_missing_values": 50,
+      "sample_row_count": 100000,
+      "table": "gold_item_features"
+    }
+  ],
+  "sample_rows": 100000,
+  "success": true,
+  "table_counts": {
+    "bronze_category_tree": 1669,
+    "bronze_events": 2756101,
+    "bronze_item_properties": 20275902,
+    "feature_item_cooccurrence": 357790,
+    "feature_item_cooccurrence_versions": 357790,
+    "feature_item_pair_stats": 1904167,
+    "feature_item_popularity": 417053,
+    "feature_item_popularity_versions": 417053,
+    "feature_registry": 3,
+    "feature_user_activity": 1407580,
+    "feature_user_activity_versions": 1407580,
+    "gold_item_features": 417053,
+    "gold_user_item_features": 2145179,
+    "silver_category_hierarchy": 1669,
+    "silver_products": 417053,
+    "silver_user_events": 2756101
+  }
+}

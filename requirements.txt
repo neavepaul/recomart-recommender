@@ -1,6 +1,9 @@
 numpy==2.5.1
 scipy==1.18.0
 matplotlib==3.10.7
+pandas==2.3.3
+great-expectations==1.19.0
+reportlab==4.4.4
 jupyter==1.1.1
 prefect==3.7.8
 dvc==3.67.1

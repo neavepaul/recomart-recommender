@@ -19,6 +19,15 @@ from src.orchestration import prefect_flow as orchestration
         (["build-bronze"], "build_bronze", {"bronze_events": 3}),
         (["transform"], "transform", {"gold_item_features": 2}),
         (["validate"], "validate", {"ok": True}),
+        (
+            ["quality-report", "--sample-rows", "10"],
+            "generate_quality_report",
+            {
+                "success": True, "critical_failures": 0,
+                "checks": [], "great_expectations": [],
+                "json_report": "quality.json", "pdf_report": "quality.pdf",
+            },
+        ),
         (["show-lineage"], "latest_lineage", [{"run_id": "r1"}]),
         (["register-features"], "register_features", {"feature_version": "v1"}),
         (["show-registry"], "list_registry", [{"feature_view": "users"}]),
@@ -40,6 +49,11 @@ from src.orchestration import prefect_flow as orchestration
         (["evaluate-models"], "evaluate_models", {"models": {}}),
         (["build-content-model"], "build_content_model", {"items": 2}),
         (["tune-hybrid"], "tune_hybrid", {"best": {}}),
+        (
+            ["recommend", "--visitor-id", "1"],
+            "recommend",
+            {"visitor_id": 1, "recommendations": []},
+        ),
         (["run"], "run_all", {"gold_item_features": 2}),
     ],
 )
@@ -58,6 +72,9 @@ def test_cli_routes_public_commands(monkeypatch, capsys, argv, target, result):
         assert payload == {"bronze_category_tree": 4}
     elif argv[0] == "ingest-products":
         assert payload == {"bronze_item_properties": 5}
+    elif argv[0] == "quality-report":
+        assert payload["success"] is True
+        assert payload["critical_failures"] == 0
     else:
         assert payload == result
 
@@ -111,6 +128,34 @@ def test_cli_failed_validation_has_nonzero_exit(monkeypatch, capsys):
     with pytest.raises(SystemExit, match="1"):
         recomart.main()
     assert json.loads(capsys.readouterr().out) == {"ok": False}
+
+
+def test_cli_failed_quality_report_has_nonzero_exit(monkeypatch, capsys):
+    monkeypatch.setattr(
+        recomart, "generate_quality_report", MagicMock(return_value={
+            "success": False, "critical_failures": 1,
+            "checks": [], "great_expectations": [],
+            "json_report": "quality.json", "pdf_report": "quality.pdf",
+        })
+    )
+    monkeypatch.setattr(sys, "argv", ["recomart", "quality-report"])
+    with pytest.raises(SystemExit, match="1"):
+        recomart.main()
+    assert json.loads(capsys.readouterr().out)["success"] is False
+
+
+def test_cli_stages_landing_snapshot(monkeypatch, capsys):
+    snapshot = MagicMock()
+    monkeypatch.setattr(recomart, "land_sources", landing := MagicMock(return_value=snapshot))
+    monkeypatch.setattr(
+        recomart, "snapshot_as_dict", MagicMock(return_value={"ingestion_date": "2026-07-21"})
+    )
+    monkeypatch.setattr(
+        sys, "argv", ["recomart", "stage-landing", "--ingestion-date", "2026-07-21"]
+    )
+    recomart.main()
+    assert json.loads(capsys.readouterr().out)["ingestion_date"] == "2026-07-21"
+    landing.assert_called_once()
 
 
 def test_cli_compatibility_helpers_delegate(monkeypatch, tmp_path):

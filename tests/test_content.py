@@ -6,6 +6,7 @@ from pathlib import Path
 from src.core import connect
 from src.modeling.content import build_content_model
 from src.modeling.evaluate import evaluate_models
+from src.modeling.inference import recommend
 from src.modeling.tune import tune_hybrid
 
 
@@ -29,6 +30,13 @@ class ContentModelTests(unittest.TestCase):
                     (10,1,100,1,'{"0":1.0,"1":1.0}'),
                     (20,1,100,1,'{"0":1.0,"1":1.0}'),
                     (30,2,200,1,'{"2":1.0}');
+                CREATE TABLE gold_user_item_features (
+                    visitor_id INTEGER,item_id INTEGER,view_count INTEGER,
+                    cart_count INTEGER,purchase_count INTEGER,
+                    interaction_score INTEGER,last_interaction_timestamp TEXT
+                );
+                INSERT INTO gold_user_item_features VALUES
+                    (1,10,1,0,0,1,'1970-01-01 00:00:01');
                 CREATE TABLE model_split_metadata (
                     cutoff_ms INTEGER,target TEXT,minimum_event_ms INTEGER,
                     maximum_event_ms INTEGER,created_at TEXT
@@ -99,6 +107,18 @@ class ContentModelTests(unittest.TestCase):
             self.assertEqual(
                 report["models"]["item_cf_content_hybrid"]["precision@1"], 1.0
             )
+            served = recommend(
+                db_path, visitor_id=1, k=1, content_model_dir=model_dir
+            )
+            self.assertEqual(served["recommendations"][0]["item_id"], 20)
+            self.assertNotIn(10, [row["item_id"] for row in served["recommendations"]])
+            self.assertTrue(served["content_model_loaded"])
+            cold = recommend(
+                db_path, visitor_id=999, k=1, content_model_dir=model_dir
+            )
+            self.assertEqual(cold["recommendations"][0]["item_id"], 30)
+            self.assertEqual(cold["recommendations"][0]["sources"], ["popularity"])
+            self.assertEqual(cold["model"], "weighted_popularity_fallback")
 
 
 if __name__ == "__main__":
