@@ -154,28 +154,27 @@ def _ensure_version_table(db: sqlite3.Connection, view: FeatureView) -> None:
 def _prune_versions(
     db: sqlite3.Connection, view: FeatureView, retention: int
 ) -> None:
+    # ``created_at`` is intentionally human-readable metadata, not an ordering
+    # key: several registrations can receive the same clock value. SQLite's
+    # registry rowid gives every successful insert an unambiguous sequence.
+    keep_versions = [
+        row[0]
+        for row in db.execute(
+            """SELECT feature_version FROM feature_registry
+               WHERE feature_view=? ORDER BY rowid DESC LIMIT ?""",
+            (view.name, retention),
+        )
+    ]
+    placeholders = ",".join("?" for _ in keep_versions)
     db.execute(
-        f"""DELETE FROM {view.version_table}
-            WHERE feature_version NOT IN (
-                SELECT feature_version FROM (
-                    SELECT feature_version, MAX(created_at) AS latest
-                    FROM {view.version_table}
-                    GROUP BY feature_version
-                    ORDER BY latest DESC
-                    LIMIT ?
-                )
-            )""",
-        (retention,),
+        f"DELETE FROM {view.version_table} "
+        f"WHERE feature_version NOT IN ({placeholders})",
+        keep_versions,
     )
     db.execute(
-        """DELETE FROM feature_registry
-           WHERE feature_view=? AND feature_version NOT IN (
-               SELECT feature_version FROM feature_registry
-               WHERE feature_view=?
-               ORDER BY created_at DESC
-               LIMIT ?
-           )""",
-        (view.name, view.name, retention),
+        f"DELETE FROM feature_registry WHERE feature_view=? "
+        f"AND feature_version NOT IN ({placeholders})",
+        [view.name, *keep_versions],
     )
 
 
@@ -201,6 +200,15 @@ def register_features(
     db = connect(db_path)
     try:
         initialize_registry(db)
+        duplicate = db.execute(
+            "SELECT 1 FROM feature_registry WHERE feature_version=? LIMIT 1",
+            (version,),
+        ).fetchone()
+        if duplicate is not None:
+            raise RuntimeError(
+                f"Feature version '{version}' is already registered; "
+                "registered feature snapshots are immutable."
+            )
         registered: list[dict[str, Any]] = []
         for view in FEATURE_VIEWS:
             if not _table_exists(db, view.source_table):
@@ -211,10 +219,6 @@ def register_features(
             feature_columns = _feature_columns(db, view)
             _ensure_version_table(db, view)
             db.execute(
-                f"""DELETE FROM {view.version_table} WHERE feature_version=?""",
-                (version,),
-            )
-            db.execute(
                 f"""INSERT INTO {view.version_table}
                     SELECT *, ?, ? FROM {view.source_table}""",
                 (version, created_at),
@@ -223,7 +227,7 @@ def register_features(
                 f"SELECT COUNT(*) FROM {view.source_table}"
             ).fetchone()[0]
             db.execute(
-                """INSERT OR REPLACE INTO feature_registry
+                """INSERT INTO feature_registry
                    (feature_view, entity, entity_key, feature_columns_json,
                     source_table, transformation, feature_version, run_id,
                     row_count, created_at)
@@ -245,6 +249,9 @@ def register_features(
                 "row_count": row_count,
             })
         db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
     manifest = {
@@ -272,9 +279,9 @@ def list_registry(db_path: Path) -> list[dict[str, Any]]:
             return []
         rows = db.execute("""
             SELECT r.* FROM feature_registry r
-            WHERE r.created_at=(
-                SELECT MAX(created_at) FROM feature_registry
-                WHERE feature_view=r.feature_view
+            WHERE r.rowid=(
+                SELECT MAX(newer.rowid) FROM feature_registry newer
+                WHERE newer.feature_view=r.feature_view
             ) ORDER BY r.feature_view
         """).fetchall()
         result = []
@@ -299,7 +306,7 @@ def resolve_version(db_path: Path, view_name: str, version: str = "latest") -> s
         if version == "latest":
             row = db.execute(
                 """SELECT feature_version FROM feature_registry
-                   WHERE feature_view=? ORDER BY created_at DESC LIMIT 1""",
+                   WHERE feature_view=? ORDER BY rowid DESC LIMIT 1""",
                 (view.name,),
             ).fetchone()
             if row is None:
@@ -369,7 +376,7 @@ def get_training_features(
     entity_ids: list[Any] | None = None,
     version: str = "latest",
 ) -> dict[str, Any]:
-    """Retrieve a specific (point-in-time) feature version for training."""
+    """Retrieve a specific immutable historical snapshot for training."""
     view = get_view(view_name)
     resolved = resolve_version(db_path, view_name, version)
     rows = _fetch(db_path, view, resolved, entity_ids)

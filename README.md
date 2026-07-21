@@ -134,6 +134,31 @@ non-zero buckets are stored.
 Products with `available = 0` are intentionally retained in Gold. A serving or
 ranking step can use this field to avoid recommending unavailable products.
 
+### Exploratory data analysis
+
+The executable notebook [notebooks/eda.ipynb](notebooks/eda.ipynb) profiles
+the complete medallion pipeline, runs the data-quality checks, summarizes Gold
+users/items/interactions and sparsity, and creates six plots under
+`reports/eda/`. Install the pinned dependencies and launch it from the project
+root:
+
+```powershell
+pip install -r requirements.txt
+jupyter notebook notebooks\eda.ipynb
+```
+
+The same plot workload is available non-interactively for pipeline or demo
+verification:
+
+```powershell
+python -m src.recomart --db data\recomart.db profile-plots `
+    --out-dir reports\eda --top 15
+```
+
+This writes interaction totals, items-per-user and users-per-item
+distributions, top-item and top-category charts, and an item co-occurrence
+heatmap.
+
 ### Feature engineering and transformation
 
 Run after Gold with:
@@ -197,7 +222,8 @@ python -m src.recomart --db data\recomart.db show-registry
 ```
 
 Retrieve features for one or more entities. Inference uses the latest version;
-training pins an explicit version for a reproducible, point-in-time read:
+training pins an explicit immutable historical snapshot for a reproducible
+read:
 
 ```powershell
 # Inference: latest feature values for serving
@@ -519,3 +545,19 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
 
 Then visit `http://127.0.0.1:5000` and open the `recomart-recommender`
 experiment. Generated MLflow databases and artifacts are ignored by Git.
+
+### Tests and coverage
+
+Install the pinned dependencies and run the complete suite from the repository
+root:
+
+```powershell
+python -m pytest
+```
+
+`pytest.ini` adds the repository root to Python's import path, uses a local
+temporary directory for reliable Windows execution, measures all modules under
+`src`, and enforces a minimum of 90% line coverage. The suite covers small
+end-to-end data transformations, embedded-comma ingestion, recommendation and
+feature-store behavior, every CLI command route, and Prefect task/flow success
+and failure handling.

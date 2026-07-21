@@ -1,6 +1,10 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
+.coverage
+coverage.json
+htmlcov/
 data/*.db
 data/*.db-*
 models/content/*.npz
@@ -11,6 +15,7 @@ mlflow.db-*
 mlruns/
 mlartifacts/
 reports/model_metrics.json
+reports/coverage.json
 .prefect/
 .venv/
 venv/

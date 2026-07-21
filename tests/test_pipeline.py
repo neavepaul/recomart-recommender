@@ -316,7 +316,7 @@ class FeatureStoreTests(unittest.TestCase):
         self.assertEqual(len(online["rows"]), 1)
         self.assertEqual(online["rows"][0]["item_id"], 20)
 
-    def test_training_retrieval_is_point_in_time(self):
+    def test_training_retrieval_uses_requested_snapshot(self):
         from src import feature_store
 
         feature_store.register_features(self.db, run_id="run-1", manifest_path=None)
@@ -352,6 +352,26 @@ class FeatureStoreTests(unittest.TestCase):
         db.close()
         self.assertEqual(versions, {"run-2", "run-3"})
         self.assertEqual(registry_versions, {"run-2", "run-3"})
+
+    def test_registered_versions_are_immutable(self):
+        from src import feature_store
+
+        feature_store.register_features(self.db, run_id="run-1", manifest_path=None)
+        db = recomart.connect(self.db)
+        db.execute(
+            "UPDATE feature_user_activity SET total_events=999 WHERE visitor_id=1"
+        )
+        db.commit()
+        db.close()
+
+        with self.assertRaisesRegex(RuntimeError, "already registered"):
+            feature_store.register_features(
+                self.db, run_id="run-1", manifest_path=None
+            )
+        training = feature_store.get_training_features(
+            self.db, "user_activity", [1], version="run-1"
+        )
+        self.assertNotEqual(training["rows"][0]["total_events"], 999)
 
     def test_unknown_version_raises(self):
         from src import feature_store
