@@ -2,6 +2,7 @@ ingestion:
   api_page_size: 100000
 curation:
   vector_size: 256
+  feature_retention: 5
 split:
   target: transaction
   test_days: 14

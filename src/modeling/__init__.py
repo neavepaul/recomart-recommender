@@ -6,9 +6,10 @@ from .profile import profile_gold
 from .split import prepare_model_data
 from .train import train_models
 from .tune import tune_hybrid
+from .visualize import generate_eda_plots
 
 __all__ = [
     "profile_gold", "prepare_model_data", "train_models", "build_content_model",
     "evaluate_models",
-    "tune_hybrid",
+    "tune_hybrid", "generate_eda_plots",
 ]
