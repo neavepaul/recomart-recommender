@@ -1,0 +1,112 @@
+[
+  {
+    "id": "019f85c8-85cb-71fb-b1aa-6db61e16fbb9",
+    "created": "2026-07-21T17:45:39.019594Z",
+    "updated": "2026-07-21T17:45:39.019594Z",
+    "name": "prefect.flow_runs.worker",
+    "level": 20,
+    "message": "Worker 'recomart-daily-worker' submitting flow run '9793e09b-5670-45c3-87c9-735c22d97478'",
+    "timestamp": "2026-07-21T17:45:36.706941Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-85cb-7021-a4b3-0450c24cc458",
+    "created": "2026-07-21T17:45:39.019594Z",
+    "updated": "2026-07-21T17:45:39.019594Z",
+    "name": "prefect.flow_runs.runner",
+    "level": 20,
+    "message": "Starting flow run process...",
+    "timestamp": "2026-07-21T17:45:37.169695Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-85cb-7f9f-b132-91911d79040b",
+    "created": "2026-07-21T17:45:39.019594Z",
+    "updated": "2026-07-21T17:45:39.019594Z",
+    "name": "prefect.flow_runs.worker",
+    "level": 20,
+    "message": "Flow run 'submission-evidence-full-data-20260721' submitted to infrastructure",
+    "timestamp": "2026-07-21T17:45:37.217244Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-9975-7bf4-b713-65a2522ce157",
+    "created": "2026-07-21T17:45:44.053993Z",
+    "updated": "2026-07-21T17:45:44.053993Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Running 1 deployment pull step(s)",
+    "timestamp": "2026-07-21T17:45:41.646570Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-9975-731f-b8c0-1ffa00683b51",
+    "created": "2026-07-21T17:45:44.053993Z",
+    "updated": "2026-07-21T17:45:44.053993Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Executing deployment step: set_working_directory",
+    "timestamp": "2026-07-21T17:45:41.704516Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-9975-71e8-af7c-9d177eb0c932",
+    "created": "2026-07-21T17:45:44.053993Z",
+    "updated": "2026-07-21T17:45:44.053993Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Deployment step 'set_working_directory' completed successfully",
+    "timestamp": "2026-07-21T17:45:42.269678Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-9975-730b-b150-6fa9c5f46c4c",
+    "created": "2026-07-21T17:45:44.053993Z",
+    "updated": "2026-07-21T17:45:44.053993Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "All deployment steps completed successfully",
+    "timestamp": "2026-07-21T17:45:42.534656Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85c8-9975-7f5f-bf2b-09e06c4c2f5b",
+    "created": "2026-07-21T17:45:44.053993Z",
+    "updated": "2026-07-21T17:45:44.053993Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Beginning flow run 'submission-evidence-full-data-20260721' for flow 'recomart-full-pipeline'",
+    "timestamp": "2026-07-21T17:45:43.724299Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cd-e718-7a02-abf2-a30921f7a8fa",
+    "created": "2026-07-21T17:51:31.608703Z",
+    "updated": "2026-07-21T17:51:31.608703Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Finished in state Completed()",
+    "timestamp": "2026-07-21T17:51:31.608703Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cd-f220-7ce0-9a00-d0eda94dcca3",
+    "created": "2026-07-21T17:51:34.432440Z",
+    "updated": "2026-07-21T17:51:34.432440Z",
+    "name": "prefect.flow_runs.runner",
+    "level": 20,
+    "message": "Process for flow run 'submission-evidence-full-data-20260721' exited cleanly.",
+    "timestamp": "2026-07-21T17:51:32.980123Z",
+    "flow_run_id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "task_run_id": null
+  }
+]

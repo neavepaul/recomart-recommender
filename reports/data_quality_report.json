@@ -212,7 +212,7 @@
   ],
   "critical_failures": 0,
   "database": "C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\data\\recomart.db",
-  "generated_at": "2026-07-21T17:29:17.815796+00:00",
+  "generated_at": "2026-07-21T18:03:28.797304+00:00",
   "great_expectations": [
     {
       "column": "visitor_id",

@@ -365,15 +365,23 @@ def write_quality_pdf(report: dict[str, Any], output_path: Path) -> None:
         ]))
         return item
 
+    failed_warnings = [
+        check for check in report["checks"]
+        if check["severity"] == "warning" and not check["success"]
+    ]
+    if not report["success"]:
+        overall_status = "Overall status: FAIL"
+    elif failed_warnings:
+        overall_status = "Overall status: PASS WITH WARNINGS"
+    else:
+        overall_status = "Overall status: PASS"
+
     story = [
         paragraph("RecoMart Data Quality Report", "ReportTitle"),
         r["Spacer"](1, 5*r["mm"]),
         paragraph(f"Generated: {report['generated_at']}", "BodyText"),
         paragraph(f"Database: {report['database']}", "BodyText"),
-        paragraph(
-            "Overall status: PASS" if report["success"] else "Overall status: FAIL",
-            "Heading2",
-        ),
+        paragraph(overall_status, "Heading2"),
         paragraph(
             "Full-table SQL checks validate integrity across every stored row. "
             "Pandas supplies descriptive profiles and Great Expectations validates "
@@ -404,7 +412,9 @@ def write_quality_pdf(report: dict[str, Any], output_path: Path) -> None:
         r["Spacer"](1, 6*r["mm"]),
         paragraph("Pandas profiling summary", "Heading2"),
     ]
-    profile_rows = [[paragraph(x) for x in ("Dataset", "Full rows", "Sample", "Missing", "Duplicates")]]
+    profile_rows = [[paragraph(x) for x in (
+        "Dataset", "Full rows", "Sample", "Total null cells", "Duplicates"
+    )]]
     for profile in report["profiles"]:
         profile_rows.append([
             paragraph(profile["table"]), paragraph(f"{profile['full_row_count']:,}"),
@@ -412,8 +422,42 @@ def write_quality_pdf(report: dict[str, Any], output_path: Path) -> None:
             paragraph(f"{profile['sample_missing_values']:,}"),
             paragraph(f"{profile['sample_duplicate_rows']:,}"),
         ])
-    story += [table(profile_rows, [65*r["mm"], 27*r["mm"], 25*r["mm"], 25*r["mm"], 25*r["mm"]])]
-    story += [r["Spacer"](1, 6*r["mm"]), paragraph("Great Expectations results", "Heading2")]
+    story += [table(profile_rows, [61*r["mm"], 26*r["mm"], 23*r["mm"], 34*r["mm"], 23*r["mm"]])]
+
+    profile_by_table = {profile["table"]: profile for profile in report["profiles"]}
+
+    def missing_in(table_name, column_name):
+        profile = profile_by_table.get(table_name, {})
+        column = next(
+            (item for item in profile.get("columns", []) if item["name"] == column_name),
+            None,
+        )
+        return 0 if column is None else column["missing"]
+
+    transaction_id_nulls = missing_in("silver_user_events", "transaction_id")
+    parent_category_nulls = missing_in("gold_item_features", "parent_category_id")
+    story += [
+        r["Spacer"](1, 4*r["mm"]),
+        paragraph("Null-count interpretation", "Heading3"),
+        paragraph(
+            "Total null cells is a descriptive profiling count, not a count of validation "
+            "failures. In the Silver event sample, "
+            f"{transaction_id_nulls:,} null cells are in transaction_id. Transaction events "
+            "are a small minority of all interactions, and transaction_id is intentionally "
+            "null for view and addtocart events. The full-table transaction_id_consistency "
+            "check separately verifies that transactions have an ID and non-transaction "
+            "events do not.",
+            "BodyText",
+        ),
+        paragraph(
+            f"The Gold item sample also contains {parent_category_nulls:,} null "
+            "parent_category_id values, which are valid for root categories with no parent. "
+            "Required identifiers, timestamps and model vectors are validated separately; "
+            "unexpected nulls in those fields fail their corresponding checks.",
+            "BodyText",
+        ),
+    ]
+    story += [r["PageBreak"](), paragraph("Great Expectations results", "Heading2")]
     gx_rows = [[paragraph(x) for x in ("Dataset", "Expectation", "Column", "Status", "Unexpected")]]
     for result in report["great_expectations"]:
         gx_rows.append([

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "019f85cf-726e-7639-890f-9fdbc196ea8b",
+    "created": "2026-07-21T17:53:12.814655Z",
+    "updated": "2026-07-21T17:53:12.814655Z",
+    "name": "prefect.flow_runs.worker",
+    "level": 20,
+    "message": "Worker 'recomart-daily-worker' submitting flow run '7e8e92eb-9afb-44dd-a2e6-f10456b7de58'",
+    "timestamp": "2026-07-21T17:53:10.876451Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-726e-7d2e-956d-b6ae4bdc0b41",
+    "created": "2026-07-21T17:53:12.814655Z",
+    "updated": "2026-07-21T17:53:12.814655Z",
+    "name": "prefect.flow_runs.runner",
+    "level": 20,
+    "message": "Starting flow run process...",
+    "timestamp": "2026-07-21T17:53:10.978310Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-726e-7711-987b-3e516493eb0d",
+    "created": "2026-07-21T17:53:12.814655Z",
+    "updated": "2026-07-21T17:53:12.814655Z",
+    "name": "prefect.flow_runs.worker",
+    "level": 20,
+    "message": "Flow run 'submission-evidence-controlled-failure-20260721' submitted to infrastructure",
+    "timestamp": "2026-07-21T17:53:11.013292Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-856d-72f1-985f-06006bf9021e",
+    "created": "2026-07-21T17:53:17.681288Z",
+    "updated": "2026-07-21T17:53:17.681288Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Running 1 deployment pull step(s)",
+    "timestamp": "2026-07-21T17:53:15.175092Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-856d-778e-9dd2-bc85f04a6a5b",
+    "created": "2026-07-21T17:53:17.681288Z",
+    "updated": "2026-07-21T17:53:17.681288Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Executing deployment step: set_working_directory",
+    "timestamp": "2026-07-21T17:53:15.212765Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-856d-7d9c-9e9a-8d3cafdd50f7",
+    "created": "2026-07-21T17:53:17.681288Z",
+    "updated": "2026-07-21T17:53:17.681288Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Deployment step 'set_working_directory' completed successfully",
+    "timestamp": "2026-07-21T17:53:15.933122Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-856d-7bb2-babc-b27b220f2406",
+    "created": "2026-07-21T17:53:17.681288Z",
+    "updated": "2026-07-21T17:53:17.681288Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "All deployment steps completed successfully",
+    "timestamp": "2026-07-21T17:53:16.243833Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-856d-7ecb-aff4-30261597d990",
+    "created": "2026-07-21T17:53:17.681288Z",
+    "updated": "2026-07-21T17:53:17.681288Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Beginning flow run 'submission-evidence-controlled-failure-20260721' for flow 'recomart-full-pipeline'",
+    "timestamp": "2026-07-21T17:53:17.326269Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-9feb-701e-927f-b3aca472b2f4",
+    "created": "2026-07-21T17:53:24.459990Z",
+    "updated": "2026-07-21T17:53:24.459990Z",
+    "name": "prefect.flow_runs",
+    "level": 40,
+    "message": "Encountered exception during execution: FileNotFoundError('Missing source files: data\\\\missing-evidence-source\\\\events.csv')\nTraceback (most recent call last):\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1288, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2036, in run_flow_sync\n    engine.call_flow_fn()\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1308, in call_flow_fn\n    result = call_with_parameters(self.flow.fn, self.parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 350, in recomart_flow\n    curated = curation_flow(\n              ^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flows.py\", line 1886, in __call__\n    return run_flow(\n           ^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2193, in run_flow\n    ret_val = run_flow_sync(**kwargs)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2038, in run_flow_sync\n    return engine.state if return_type == \"state\" else engine.result()\n                                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 768, in result\n    raise self._raised\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1288, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2036, in run_flow_sync\n    engine.call_flow_fn()\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1308, in call_flow_fn\n    result = call_with_parameters(self.flow.fn, self.parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 292, in curation_flow\n    bronze = bronze_task(db_path, raw_dir, run_id, speed, limit, api_page_size)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\tasks.py\", line 1227, in __call__\n    return run_task(\n           ^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1916, in run_task\n    return run_task_sync(**kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1686, in run_task_sync\n    return engine.state if return_type == \"state\" else engine.result()\n                                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 617, in result\n    raise self._raised\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1021, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1683, in run_task_sync\n    engine.call_task_fn(txn)\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1038, in call_task_fn\n    result = call_with_parameters(self.task.fn, parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 32, in bronze_task\n    result = build_bronze(db_path, raw_dir, speed, limit, api_page_size)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\pipelines\\bronze.py\", line 29, in build_bronze\n    snapshot = land_sources(raw_dir, landing_dir, ingestion_date)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\ingestion\\landing.py\", line 88, in land_sources\n    events_dir, event_records = _land_group(\n                                ^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\ingestion\\landing.py\", line 43, in _land_group\n    raise FileNotFoundError(\"Missing source files: \" + \", \".join(missing))\nFileNotFoundError: Missing source files: data\\missing-evidence-source\\events.csv",
+    "timestamp": "2026-07-21T17:53:24.345516Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-9feb-76b4-8afc-67cfc1deaa9c",
+    "created": "2026-07-21T17:53:24.459990Z",
+    "updated": "2026-07-21T17:53:24.459990Z",
+    "name": "prefect.flow_runs",
+    "level": 20,
+    "message": "Finished in state Failed('Flow run encountered an exception: FileNotFoundError: Missing source files: data\\\\missing-evidence-source\\\\events.csv')",
+    "timestamp": "2026-07-21T17:53:24.443903Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-9feb-7ea2-a6bf-2ff369cd25b8",
+    "created": "2026-07-21T17:53:24.459990Z",
+    "updated": "2026-07-21T17:53:24.459990Z",
+    "name": "prefect.flow_runs",
+    "level": 40,
+    "message": "Engine execution exited with unexpected exception\nTraceback (most recent call last):\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2193, in run_flow\n    ret_val = run_flow_sync(**kwargs)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2038, in run_flow_sync\n    return engine.state if return_type == \"state\" else engine.result()\n                                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 768, in result\n    raise self._raised\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1288, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2036, in run_flow_sync\n    engine.call_flow_fn()\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1308, in call_flow_fn\n    result = call_with_parameters(self.flow.fn, self.parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 350, in recomart_flow\n    curated = curation_flow(\n              ^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flows.py\", line 1886, in __call__\n    return run_flow(\n           ^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2193, in run_flow\n    ret_val = run_flow_sync(**kwargs)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2038, in run_flow_sync\n    return engine.state if return_type == \"state\" else engine.result()\n                                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 768, in result\n    raise self._raised\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1288, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 2036, in run_flow_sync\n    engine.call_flow_fn()\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\flow_engine.py\", line 1308, in call_flow_fn\n    result = call_with_parameters(self.flow.fn, self.parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 292, in curation_flow\n    bronze = bronze_task(db_path, raw_dir, run_id, speed, limit, api_page_size)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\tasks.py\", line 1227, in __call__\n    return run_task(\n           ^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1916, in run_task\n    return run_task_sync(**kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1686, in run_task_sync\n    return engine.state if return_type == \"state\" else engine.result()\n                                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 617, in result\n    raise self._raised\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1021, in run_context\n    yield self\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1683, in run_task_sync\n    engine.call_task_fn(txn)\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\task_engine.py\", line 1038, in call_task_fn\n    result = call_with_parameters(self.task.fn, parameters)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\.venv\\Lib\\site-packages\\prefect\\utilities\\callables\\__init__.py\", line 348, in call_with_parameters\n    return fn(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\orchestration\\prefect_flow.py\", line 32, in bronze_task\n    result = build_bronze(db_path, raw_dir, speed, limit, api_page_size)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\pipelines\\bronze.py\", line 29, in build_bronze\n    snapshot = land_sources(raw_dir, landing_dir, ingestion_date)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\ingestion\\landing.py\", line 88, in land_sources\n    events_dir, event_records = _land_group(\n                                ^^^^^^^^^^^^\n  File \"C:\\Users\\neave\\Documents\\GitHub\\recomart-recommender\\src\\ingestion\\landing.py\", line 43, in _land_group\n    raise FileNotFoundError(\"Missing source files: \" + \", \".join(missing))\nFileNotFoundError: Missing source files: data\\missing-evidence-source\\events.csv",
+    "timestamp": "2026-07-21T17:53:24.443903Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-a96e-7faa-b761-e462a7f7cb35",
+    "created": "2026-07-21T17:53:26.894652Z",
+    "updated": "2026-07-21T17:53:26.894652Z",
+    "name": "prefect.flow_runs.runner",
+    "level": 40,
+    "message": "Process for flow run 'submission-evidence-controlled-failure-20260721' exited with status code: 1; Process exited with a general error.",
+    "timestamp": "2026-07-21T17:53:25.191876Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-a96e-79c3-b9ff-c0015e8e5eba",
+    "created": "2026-07-21T17:53:26.894652Z",
+    "updated": "2026-07-21T17:53:26.894652Z",
+    "name": "prefect.flow_runs.runner",
+    "level": 20,
+    "message": "Check the flow run logs for an unhandled exception or assertion error.",
+    "timestamp": "2026-07-21T17:53:25.191876Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  },
+  {
+    "id": "019f85cf-a96e-7455-95b2-cdd7a51dbdec",
+    "created": "2026-07-21T17:53:26.894652Z",
+    "updated": "2026-07-21T17:53:26.894652Z",
+    "name": "prefect.flow_runs.worker",
+    "level": 20,
+    "message": "Check the flow run logs for an unhandled exception or assertion error.",
+    "timestamp": "2026-07-21T17:53:25.294060Z",
+    "flow_run_id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "task_run_id": null
+  }
+]

@@ -1,7 +1,8 @@
 schema: '2.0'
 stages:
   recomart_pipeline:
-    cmd: python -m src.orchestration.prefect_flow --mode full --db
+    cmd: >-
+      python -m src.orchestration.prefect_flow --mode full --db
       data/recomart.db --raw-dir data/raw --model-dir models/content --report
       reports/model_metrics.json --api-page-size 100000 --vector-size 256
       --feature-retention 5 --target transaction --test-days 14
@@ -19,8 +20,8 @@ stages:
       size: 196
     - path: src
       hash: md5
-      md5: b6e91ccb37adf50f74cf305f47e011dc.dir
-      size: 196160
+      md5: 4cf3a5af1a224c825e06ff2cf4bacd20.dir
+      size: 196798
       nfiles: 35
     params:
       params.yaml:
@@ -37,17 +38,17 @@ stages:
     outs:
     - path: data/recomart.db
       hash: md5
-      md5: 4ac06245b0f1091fdeef9d2953393573
-      size: 2875150336
+      md5: aabb4b9ae7379da5b43cd69720cc074c
+      size: 2996801536
     - path: models/content
       hash: md5
-      md5: 4e899bbb385f248456599bd75f53f8c6.dir
+      md5: f2fa8cda64fcbb19bc6bf3de15d0bc12.dir
       size: 19918704
       nfiles: 4
     - path: reports/feature_registry.json
       hash: md5
-      md5: 350ff6b3c8d79876cad186495999f193
-      size: 1960
+      md5: b01474ddac3cacd32f1935fc428a0f34
+      size: 2012
     - path: reports/model_metrics.json
       hash: md5
       md5: 77bb91101a381df911f2c7ec2b35ede2

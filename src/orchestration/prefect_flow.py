@@ -335,19 +335,30 @@ def modeling_flow(
 
 
 @flow(name="recomart-full-pipeline", log_prints=True)
-def recomart_flow(**parameters) -> dict:
-    curation_keys = {
-        "db_path", "raw_dir", "api_page_size", "vector_size",
-        "neighbors", "min_cooccurrence", "max_history", "feature_retention",
-        "speed", "limit"
-    }
-    curated = curation_flow(**{
-        key: value for key, value in parameters.items() if key in curation_keys
-    })
-    modeled = modeling_flow(**{
-        key: value for key, value in parameters.items()
-        if key not in {"raw_dir", "api_page_size", "feature_retention", "speed", "limit"}
-    })
+def recomart_flow(
+    db_path: Path = DEFAULT_DB, raw_dir: Path = RAW,
+    model_dir: Path = Path("models/content"),
+    report_path: Path = Path("reports/model_metrics.json"),
+    api_page_size: int = 100_000, vector_size: int = 256,
+    target: str = "transaction", test_days: int = 14,
+    validation_days: int = 14, k: int = 10,
+    max_history: int = 30, min_cooccurrence: int = 2, neighbors: int = 50,
+    feature_retention: int = 5, speed: float = 0,
+    limit: int | None = None,
+) -> dict:
+    """Run the complete curation and modeling DAG with deployable parameters."""
+    curated = curation_flow(
+        db_path=db_path, raw_dir=raw_dir, api_page_size=api_page_size,
+        vector_size=vector_size, neighbors=neighbors,
+        min_cooccurrence=min_cooccurrence, max_history=max_history,
+        feature_retention=feature_retention, speed=speed, limit=limit,
+    )
+    modeled = modeling_flow(
+        db_path=db_path, model_dir=model_dir, report_path=report_path,
+        target=target, test_days=test_days, validation_days=validation_days,
+        vector_size=vector_size, k=k, max_history=max_history,
+        min_cooccurrence=min_cooccurrence, neighbors=neighbors,
+    )
     return {"curation": curated, "modeling": modeled}
 
 

@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-07-21T23:33:28+05:30",
+  "deployment": {
+    "flow_name": "recomart-full-pipeline",
+    "deployment_name": "daily-full-pipeline",
+    "deployment_id": "3987c56b-dd4e-4be7-a006-0c68882c2ec9",
+    "cron": "0 2 * * *",
+    "timezone": "Asia/Kolkata",
+    "active": true,
+    "concurrency_limit": 1,
+    "work_pool": "recomart-process"
+  },
+  "successful_run": {
+    "name": "submission-evidence-full-data-20260721",
+    "id": "9793e09b-5670-45c3-87c9-735c22d97478",
+    "state": "COMPLETED",
+    "runtime_seconds": 347.265003,
+    "api_page_size": 100000,
+    "limit": null
+  },
+  "controlled_failure_run": {
+    "name": "submission-evidence-controlled-failure-20260721",
+    "id": "7e8e92eb-9afb-44dd-a2e6-f10456b7de58",
+    "state": "FAILED_AS_EXPECTED",
+    "retry_count": 1,
+    "retry_delay_seconds": 5,
+    "reason": "deliberately missing source file"
+  },
+  "row_counts": {
+    "bronze_category_tree": 1669,
+    "bronze_events": 2756101,
+    "bronze_item_properties": 20275902,
+    "silver_category_hierarchy": 1669,
+    "silver_products": 417053,
+    "silver_user_events": 2756101,
+    "gold_item_features": 417053,
+    "gold_user_item_features": 2145179
+  },
+  "quality": {
+    "success": true,
+    "critical_failures": 0,
+    "great_expectations_passed": 12,
+    "great_expectations_total": 12,
+    "warning_failures": 2
+  },
+  "tests": {
+    "passed": 56,
+    "failed": 0,
+    "line_coverage_percent": 91.68
+  },
+  "dvc_status": "Data and pipelines are up to date."
+}

@@ -562,6 +562,35 @@ $env:PREFECT_API_URL = "http://127.0.0.1:4200/api"
 python -m src.orchestration.prefect_flow --mode full
 ```
 
+The version-controlled `prefect.yaml` deployment runs the complete pipeline
+once daily at **02:00 Asia/Kolkata (IST)**. Register it against a persistent
+Prefect server and start its local process worker:
+
+```powershell
+# Terminal 1: orchestration API and UI
+prefect server start
+
+# Terminal 2: register the deployment
+$env:PREFECT_API_URL = "http://127.0.0.1:4200/api"
+prefect work-pool create --type process recomart-process
+prefect deploy --name daily-full-pipeline
+
+# Terminal 2: keep the worker running for scheduled jobs
+prefect worker start --pool recomart-process
+```
+
+The Prefect UI is available at `http://127.0.0.1:4200`. The API and worker must
+be running at 02:00 for a local scheduled run to start. Trigger the same
+deployment immediately for a demo or evidence capture:
+
+```powershell
+$env:PREFECT_API_URL = "http://127.0.0.1:4200/api"
+prefect deployment run "recomart-full-pipeline/daily-full-pipeline"
+```
+
+Submission-ready schedule, success, retry/failure, row-count, quality, test,
+and metric evidence is indexed in `reports/evidence/README.md`.
+
 ### Dataset lineage metadata
 
 Prefect flows persist operational metadata inside the RecoMart database:

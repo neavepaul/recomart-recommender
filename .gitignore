@@ -24,3 +24,5 @@ tmp/
 *.csv
 reports/**/*.png
 reports/feature_registry.json
+reports/evidence/*.log
+*.docx

@@ -1,0 +1,47 @@
+name: recomart-recommender
+prefect-version: 3.7.8
+
+build: []
+push: []
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: C:\Users\neave\Documents\GitHub\recomart-recommender
+
+deployments:
+  - name: daily-full-pipeline
+    version: "1.0"
+    tags:
+      - recomart
+      - daily
+      - full-data
+    description: >-
+      Complete RetailRocket landing, Bronze, Silver, Gold, feature-store,
+      training, tuning, and evaluation pipeline. Runs daily at 02:00 IST.
+    entrypoint: src/orchestration/prefect_flow.py:recomart_flow
+    parameters:
+      db_path: data/recomart.db
+      raw_dir: data/raw
+      model_dir: models/content
+      report_path: reports/model_metrics.json
+      api_page_size: 100000
+      vector_size: 256
+      target: transaction
+      test_days: 14
+      validation_days: 14
+      k: 10
+      max_history: 30
+      min_cooccurrence: 2
+      neighbors: 50
+      feature_retention: 5
+      speed: 0
+      limit: null
+    concurrency_limit: 1
+    schedules:
+      - cron: "0 2 * * *"
+        slug: daily-2am-ist
+        timezone: Asia/Kolkata
+        active: true
+    work_pool:
+      name: recomart-process
+      work_queue_name: default
+      job_variables: {}
